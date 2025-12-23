@@ -1,4 +1,5 @@
 format: jb-book
 root: intro
 chapters:
+  - file: strategic_model
   - file: multi_year_simulation

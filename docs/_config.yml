@@ -1,3 +1,19 @@
 title: "Democrasim Documentation"
+author: PolicyEngine
+copyright: "2024"
+
 execute:
-  execute_notebooks: auto
+  execute_notebooks: cache
+  timeout: 300
+
+repository:
+  url: https://github.com/MaxGhenis/democrasim
+  branch: main
+
+html:
+  use_issues_button: true
+  use_repository_button: true
+
+sphinx:
+  config:
+    html_theme: sphinx_book_theme
