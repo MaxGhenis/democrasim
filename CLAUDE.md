@@ -80,6 +80,26 @@ Voters are randomly generated using `VoterParams`:
 
 Interventions are applied via `voter.apply_intervention(id, effect)` and stack multiplicatively.
 
+### Strategic Model (`democrasim/core/strategic.py`)
+
+General equilibrium model where candidates optimize policy positions:
+
+```
+Candidate objective:
+E[U] = P(win) · u(outcome_if_win) + (1-P(win)) · u(outcome_if_lose)
+
+Voter behavior:
+Vote for candidate whose perceived outcome is closest to ideal
+```
+
+Key components:
+- **PolicyOutcomeFunction**: Maps policy τ → outcome g (e.g., tax rate → Gini)
+- **StrategicVoter**: Has ideal outcome g*, perceives f(τ) with noise
+- **StrategicCandidate**: Optimizes τ to maximize expected policy utility
+- **find_equilibrium()**: Solves Nash equilibrium via iterated best response
+
+Run `python examples/strategic_equilibrium.py` to see how voter noise affects equilibrium.
+
 ## Key Dependencies
 
 - **squigglepy**: Uncertainty quantification (listed but distributions currently use numpy directly)
