@@ -180,11 +180,17 @@ def sweep(args: argparse.Namespace) -> None:
         "welfare_metric": "isoelastic eta=1",
         "tracking_target": TRACKING_TARGET,
         "welfare_optimal": measured.policy_labels[int(np.argmax(welfare_by_policy))],
-        "thresholds_ranking_accuracy": thresholds,
+        # None = never reaches the target on the swept grid (strict-JSON null).
+        "thresholds_ranking_accuracy": {
+            key: (value if np.isfinite(value) else None)
+            for key, value in thresholds.items()
+        },
         "bias": {
             "toward": measured.policy_labels[toward],
             "noise_sd": args.bias_noise_sd,
-            "tolerance_dollars": bias_tolerance,
+            "tolerance_dollars": (
+                bias_tolerance if np.isfinite(bias_tolerance) else None
+            ),
         },
         "mean_absolute_margin_measured": _mean_absolute_margin(measured),
         "n_elections": n_elections,
@@ -193,10 +199,16 @@ def sweep(args: argparse.Namespace) -> None:
     }
     (results_dir / "headline.json").write_text(json.dumps(headline, indent=2) + "\n")
 
+    from democrasim.data import load_measured_electorate
+
     ordered = ["measured", "toy_matched", "toy_homogeneous"]
     saved = figures.save_figures(
         {
-            "impact_distribution": figures.impact_distribution(measured),
+            # Gross engine deltas: "what the reforms do" (the share seeing
+            # ≈$0 is the reform's reach). Financing enters the other figures.
+            "impact_distribution": figures.impact_distribution(
+                load_measured_electorate()
+            ),
             "margin_distribution": figures.margin_distribution(
                 [worlds[k] for k in ordered], [world_names[k] for k in ordered]
             ),

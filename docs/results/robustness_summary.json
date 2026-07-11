@@ -1,0 +1,26 @@
+{
+  "proportional_isoelastic": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 0.0,
+    "turnout_at_perfect": 0.9981372696063727,
+    "max_p_tracked": 1.0
+  },
+  "none_utilitarian": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 0.24290695930406958,
+    "max_p_tracked": 1.0
+  },
+  "none_isoelastic": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 0.24290695930406958,
+    "max_p_tracked": 1.0
+  },
+  "exact_parity_per_capita": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 0.24290695930406958,
+    "max_p_tracked": 1.0
+  }
+}

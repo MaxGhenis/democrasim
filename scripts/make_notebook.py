@@ -6,7 +6,10 @@ against the committed artifact, and saved with outputs so it renders on
 GitHub without anyone needing to run it.
 """
 
+import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import nbformat
@@ -36,6 +39,7 @@ CELLS = [
         "Every number below is a model result, not observed data."
     ),
     code(
+        "%matplotlib inline\n"
         "import numpy as np\n"
         "import democrasim as d\n"
         "\n"
@@ -103,7 +107,7 @@ CELLS = [
         "    [financed, matched, homogeneous],\n"
         "    ['Measured households', 'Moment-matched Gaussian toy',\n"
         "     'Homogeneous-stakes toy'],\n"
-        ")"
+        ");"
     ),
     md(
         "## One election\n"
@@ -111,7 +115,16 @@ CELLS = [
         "Sample 10,001 adults (probability ∝ survey weight), let each "
         "perceive their own household's stakes through the perception "
         "model, vote by plurality (perceived indifference abstains), and "
-        "grade the winner against the welfare ranking."
+        "grade the winner against the welfare ranking.\n"
+        "\n"
+        "Watch the zero-noise row: with financing on, perfectly informed "
+        "self-interest can elect the welfare-*inferior* policy, because the "
+        "~three-quarters of adults with almost nothing at stake all share a "
+        "tiny signed margin (their share of the two policies' slightly "
+        "different costs). Moderate noise turns those near-indifferent "
+        "votes into fair coins that cancel, letting the high-stakes "
+        "minority decide — misperception can *help*. The findings note "
+        "unpacks when this knife-edge appears and disappears."
     ),
     code(
         "for noise_sd in (0.0, 1_000.0, 10_000.0):\n"
@@ -133,9 +146,15 @@ CELLS = [
         "Sweep perception noise and plot the share of elections electing "
         "the welfare-optimal policy against the survey-comparable accuracy "
         "scale: the mean probability that a voter correctly ranks the two "
-        "policies for their own household (0.5 = coin flip). This cell "
-        "runs a reduced grid to stay quick; `democrasim sweep` reproduces "
-        "the full version behind `docs/findings.md`."
+        "policies for their own household (0.5 = coin flip). On measured "
+        "stakes the curve is **not monotone** — tracking is perfect across "
+        "a wide band of moderate accuracy and fails at both extremes — and "
+        "the two toy worlds bracket it: the homogeneous world is the "
+        "Condorcet jury theorem (any accuracy above 0.5 aggregates to "
+        "near-certainty), while the Gaussian world never escapes the coin "
+        "flip. This cell runs a reduced grid to stay quick; "
+        "`democrasim sweep` reproduces the full version behind "
+        "`docs/findings.md`."
     ),
     code(
         "noise_grid = [0.0, 100.0, 300.0, 1_000.0, 3_000.0, 10_000.0,\n"
@@ -161,7 +180,7 @@ CELLS = [
         "    target=0.9,\n"
         "    thresholds=[thresholds['measured'], thresholds['matched'],\n"
         "                thresholds['homogeneous']],\n"
-        ")"
+        ");"
     ),
     md(
         "## Systematic bias\n"
@@ -184,7 +203,7 @@ CELLS = [
         "print(f'bias flipping the median election: '\n"
         "      f'${tolerance:,.0f}/voter/year of perceived advantage')\n"
         "figures.bias_curve([bias_frame], ['Measured households'],\n"
-        "                   toward_label=financed.policy_labels[toward])"
+        "                   toward_label=financed.policy_labels[toward]);"
     ),
     md(
         "## Where to next\n"
@@ -210,10 +229,35 @@ def main() -> None:
         "display_name": "Python 3",
         "language": "python",
     }
-    client = NotebookClient(
-        notebook, timeout=1_200, resources={"metadata": {"path": str(OUT.parent)}}
-    )
-    client.execute()
+    # Pin the "python3" kernelspec to THIS interpreter via a scratch
+    # JUPYTER_DATA_DIR — user-level kernelspecs with the same name may point
+    # at unrelated virtualenvs, and nbclient resolves by name.
+    with tempfile.TemporaryDirectory() as tmp:
+        spec_dir = Path(tmp) / "kernels" / "python3"
+        spec_dir.mkdir(parents=True)
+        (spec_dir / "kernel.json").write_text(
+            json.dumps(
+                {
+                    "argv": [
+                        sys.executable,
+                        "-Xfrozen_modules=off",
+                        "-m",
+                        "ipykernel_launcher",
+                        "-f",
+                        "{connection_file}",
+                    ],
+                    "display_name": "Python 3",
+                    "language": "python",
+                }
+            )
+        )
+        os.environ["JUPYTER_DATA_DIR"] = tmp
+        client = NotebookClient(
+            notebook,
+            timeout=1_200,
+            resources={"metadata": {"path": str(OUT.parent)}},
+        )
+        client.execute()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     nbformat.write(notebook, OUT)
     print(f"wrote {OUT}")

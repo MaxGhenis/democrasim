@@ -4,17 +4,20 @@ Style follows a small set of chart rules: thin marks (2px lines), one axis,
 recessive hairline grid, muted axis ink, categorical hues assigned in fixed
 order by entity (measured world = blue, moment-matched toy = aqua,
 homogeneous toy = yellow — never reassigned when a series drops out), a
-legend plus selective direct labels, and text in ink colors rather than
-series colors. Low-contrast slots (aqua, yellow) are always paired with
-direct labels.
+legend naming every series, and text in ink colors rather than series
+colors. Series identity leans on the legend plus the CSV table views in
+docs/results/ (several ECDF curves share an endpoint, so end-of-line
+labels would collide).
 """
 
+import sys
 from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 import matplotlib
 
-matplotlib.use("Agg")
+if "ipykernel" not in sys.modules:  # keep notebook inline rendering alive
+    matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -71,21 +74,6 @@ def _new_axes(figsize: tuple[float, float]) -> tuple[plt.Figure, plt.Axes]:
     return fig, ax
 
 
-def _direct_label(ax: plt.Axes, x: float, y: float, text: str, color: str) -> None:
-    ax.annotate(
-        text,
-        xy=(x, y),
-        xytext=(6, 0),
-        textcoords="offset points",
-        va="center",
-        fontsize=9,
-        fontweight="bold",
-        color=INK_SECONDARY,
-        annotation_clip=False,
-    )
-    ax.plot([x], [y], marker="o", markersize=5, color=color, zorder=5)
-
-
 def impact_distribution(
     electorate: Electorate,
     *,
@@ -135,7 +123,8 @@ def impact_distribution(
             )
             ax.set_ylabel("share of adults")
         np.atleast_1d(axes)[-1].set_xlabel(
-            "true change in household net income, dollars per year"
+            "true change in household net income, dollars per year "
+            "(gross, before financing)"
         )
         return fig
 
@@ -150,7 +139,7 @@ def margin_distribution(
     for voters in that world — the quantity perception noise competes with.
     """
     with plt.rc_context(_RC):
-        fig, ax = _new_axes((7.0, 3.6))
+        fig, ax = _new_axes((7.0, 3.9))
         for j, (electorate, name) in enumerate(zip(electorates, names, strict=True)):
             magnitude = np.abs(electorate.margins)
             order = np.argsort(magnitude)
@@ -163,13 +152,6 @@ def margin_distribution(
                 cdf[positive],
                 color=SERIES[j],
                 label=name,
-            )
-            _direct_label(
-                ax,
-                float(np.maximum(x[-1], 1.0)),
-                float(cdf[-1]),
-                name,
-                SERIES[j],
             )
         ax.set_xscale("log")
         ax.set_ylim(0, 1.02)
@@ -204,7 +186,6 @@ def accuracy_curve(
                 linewidth=0,
             )
             ax.plot(x, y, color=SERIES[j], label=name)
-            _direct_label(ax, float(x[-1]), float(y[-1]), name, SERIES[j])
         if target is not None:
             ax.axhline(target, color=BASELINE, linewidth=1.0, linestyle=(0, (4, 4)))
             ax.text(
@@ -248,7 +229,6 @@ def bias_curve(
             x = frame["bias_dollars"].to_numpy()
             y = frame[f"p_win_{toward}"].to_numpy()
             ax.plot(x, y, color=SERIES[j], label=name)
-            _direct_label(ax, float(x[-1]), float(y[-1]), name, SERIES[j])
         ax.axhline(0.5, color=BASELINE, linewidth=1.0, linestyle=(0, (4, 4)))
         ax.set_xlabel(
             "systematic misperception favoring "
@@ -257,20 +237,31 @@ def bias_curve(
         ax.set_ylabel(f"share of elections won by {toward_label}")
         ax.set_ylim(-0.02, 1.05)
         ax.set_title("How many perceived dollars of bias flip the election?")
-        ax.legend(loc="lower right")
+        if len(sweeps) > 1:  # a single series is named by the title
+            ax.legend(loc="lower right")
         return fig
 
 
 def rule_comparison(sweeps: Sequence[pd.DataFrame], names: Sequence[str]) -> plt.Figure:
-    """Welfare tracking by voting rule, on one electorate."""
+    """Welfare tracking by voting rule, on one electorate.
+
+    Rules can coincide exactly (with two policies, instant runoff IS
+    plurality), so coincident lines get distinct treatments: the first
+    series draws as a wide translucent band underneath, later series as
+    normal or dashed lines on top — all still color-by-entity.
+    """
+    styles = (
+        {"linewidth": 4.5, "alpha": 0.35, "solid_capstyle": "round"},
+        {"linewidth": 2.0},
+        {"linewidth": 2.0, "linestyle": (0, (4, 3))},
+    )
     with plt.rc_context(_RC):
         fig, ax = _new_axes((7.0, 4.0))
         for j, (sweep, name) in enumerate(zip(sweeps, names, strict=True)):
             frame = sweep.sort_values("mean_ranking_accuracy")
             x = frame["mean_ranking_accuracy"].to_numpy()
             y = frame["p_tracked"].to_numpy()
-            ax.plot(x, y, color=SERIES[j], label=name)
-            _direct_label(ax, float(x[-1]), float(y[-1]), name, SERIES[j])
+            ax.plot(x, y, color=SERIES[j], label=name, **styles[j % len(styles)])
         ax.set_xlabel("mean probability a voter correctly ranks the two policies")
         ax.set_ylabel("share of elections electing the\nwelfare-optimal policy")
         ax.set_ylim(-0.02, 1.05)

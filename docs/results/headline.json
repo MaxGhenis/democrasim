@@ -1,0 +1,20 @@
+{
+  "financing": "per_capita",
+  "welfare_metric": "isoelastic eta=1",
+  "tracking_target": 0.9,
+  "welfare_optimal": "Policy A",
+  "thresholds_ranking_accuracy": {
+    "measured": 0.5207667291008212,
+    "toy_matched": null,
+    "toy_homogeneous": 0.5074571038900835
+  },
+  "bias": {
+    "toward": "Policy B",
+    "noise_sd": 1000.0,
+    "tolerance_dollars": 200.0
+  },
+  "mean_absolute_margin_measured": 651.7286025389409,
+  "n_elections": 240,
+  "n_voters": 10001,
+  "seed": 42
+}
