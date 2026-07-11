@@ -1,0 +1,39 @@
+{
+  "gross_totals_bn": [
+    39.1,
+    38.01
+  ],
+  "levy_per_adult": [
+    146.16,
+    142.05
+  ],
+  "levy_gap_per_adult": 4.1,
+  "financed_margin": {
+    "mean_abs": 652.0,
+    "share_abs_below_10": 0.472,
+    "share_abs_below_25": 0.755,
+    "share_abs_below_100": 0.761,
+    "share_abs_below_1000": 0.88,
+    "share_prefer_A": 0.213,
+    "share_prefer_B": 0.787
+  },
+  "gross_margin": {
+    "share_zero_both": 0.758,
+    "share_prefer_A": 0.213,
+    "share_prefer_B": 0.03,
+    "share_indifferent": 0.758
+  },
+  "high_stakes": {
+    "share_margin_above_500": 0.199,
+    "kids_share_of_pro_A_500": 1.0,
+    "share_margin_below_minus_500": 0.026
+  },
+  "welfare_isoelastic_eta1": [
+    -229500.0,
+    -514500.0
+  ],
+  "welfare_utilitarian_financed": [
+    -4.239e-06,
+    -4.053e-06
+  ]
+}
