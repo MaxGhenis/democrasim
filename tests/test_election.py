@@ -9,6 +9,7 @@ from democrasim import (
     LinearGaussianPerception,
     Plurality,
     Utilitarian,
+    apply_financing,
     run_election,
 )
 
@@ -60,6 +61,7 @@ class TestRunElection:
         assert result.winner == 0
         assert result.tracked
         assert result.regret == 0.0
+        assert not result.degenerate_welfare
 
     def test_full_population_mode(self, rng):
         electorate = concentrated_stakes_electorate()
@@ -90,6 +92,50 @@ class TestRunElection:
         assert not result.tracked
         # Status quo realizes zero welfare; regret is the forgone optimum.
         assert result.regret == pytest.approx(result.welfare_by_policy.max())
+
+    def test_no_winner_can_have_negative_regret(self, rng):
+        electorate = Electorate(
+            deltas=np.full((5, 2), -100.0),
+            weights=np.ones(5),
+            base_income=np.full(5, 50_000.0),
+            hh_adults=np.ones(5),
+            policy_labels=("Policy A", "Policy B"),
+            source="TEST welfare-negative policies",
+        )
+        spec = ElectionSpec(
+            perception=PERFECT_PERCEPTION,
+            rule=Plurality(),
+            welfare=Utilitarian(),
+            n_voters=None,
+        )
+
+        result = run_election(electorate, spec, rng)
+
+        assert result.winner == NO_WINNER
+        np.testing.assert_allclose(result.welfare_by_policy, [-500.0, -500.0])
+        assert result.regret == pytest.approx(-500.0)
+        assert result.degenerate_welfare
+
+    def test_budget_neutral_welfare_is_degenerate(self, small_electorate, rng):
+        electorate = apply_financing(small_electorate, "per_capita")
+        spec = ElectionSpec(
+            perception=PERFECT_PERCEPTION,
+            welfare=Utilitarian(),
+            n_voters=None,
+        )
+
+        result = run_election(electorate, spec, rng)
+
+        np.testing.assert_allclose(result.welfare_by_policy, [0.0, 0.0], atol=1e-9)
+        assert result.degenerate_welfare
+
+        near_tied = run_election(
+            electorate,
+            spec,
+            rng,
+            welfare_by_policy=np.array([1e-6, 1e-6 + 5e-16]),
+        )
+        assert near_tied.degenerate_welfare
 
     def test_precomputed_welfare_matches(self, rng):
         electorate = concentrated_stakes_electorate()

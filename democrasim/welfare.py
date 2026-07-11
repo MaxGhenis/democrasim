@@ -32,9 +32,31 @@ class WelfareMetric(Protocol):
         ...
 
 
-def welfare_optimal(metric: WelfareMetric, electorate: Electorate) -> int:
-    """Index of the policy the metric ranks highest."""
-    return int(np.argmax(metric.per_policy(electorate)))
+def _welfare_is_degenerate(values: FloatArray) -> bool:
+    """Whether the top two welfare values fail the relative-distinctness rule."""
+    ordered = np.sort(values)
+    spread = float(ordered[-1] - ordered[-2])
+    scale = float(np.max(np.abs(values)))
+    return spread <= 1e-9 * max(scale, 1e-12)
+
+
+def welfare_optimal(
+    metric: WelfareMetric,
+    electorate: Electorate,
+    *,
+    require_distinct: bool = False,
+) -> int:
+    """Index of the policy the metric ranks highest.
+
+    If ``require_distinct`` is true, reject a ranking whose top-two spread is
+    no more than ``1e-9`` times the scale of the policy welfare values.
+    """
+    values = metric.per_policy(electorate)
+    if require_distinct and _welfare_is_degenerate(values):
+        raise ValueError(
+            "degenerate welfare ranking: the top two policies are not distinct"
+        )
+    return int(np.argmax(values))
 
 
 @dataclass(frozen=True)
@@ -50,8 +72,10 @@ class Isoelastic:
     """Isoelastic (CRRA) social welfare over household net incomes.
 
     Welfare change of a policy is ``Σ (weight/hh_adults)·[u(y₁) − u(y₀)]``
-    with ``u(y) = y^(1−η)/(1−η)`` (``ln y`` at η=1). η=0 recovers
-    utilitarian dollars; higher η weights gains to poorer households more.
+    with ``u(y) = y^(1−η)/(1−η)`` (``ln y`` at η=1). η=0 yields
+    floor-censored dollars, equal to utilitarian dollars only when baseline
+    and post-delta incomes stay above the floor. Higher η weights gains to
+    poorer households more.
 
     Real microdata contains zero and negative net incomes, where CRRA
     utility is undefined, so incomes are floored: ``y₀ = max(y, floor)``

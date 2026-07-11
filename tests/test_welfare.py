@@ -41,6 +41,25 @@ class TestUtilitarian:
 
 
 class TestIsoelastic:
+    def test_eta_zero_is_floor_censored(self):
+        binding = two_voter_electorate(
+            deltas=[[-500.0, 250.0]],
+            incomes=[-1_000.0],
+        )
+        far_from_floor = two_voter_electorate(
+            deltas=[[-500.0, 250.0]],
+            incomes=[10_000.0],
+        )
+
+        np.testing.assert_allclose(
+            Isoelastic(eta=0.0).per_policy(binding), [0.0, 250.0]
+        )
+        np.testing.assert_allclose(Utilitarian().per_policy(binding), [-500.0, 250.0])
+        np.testing.assert_allclose(
+            Isoelastic(eta=0.0).per_policy(far_from_floor),
+            Utilitarian().per_policy(far_from_floor),
+        )
+
     def test_concavity_prefers_gains_to_the_poor(self):
         # Policy A gives $1,000 to a $20k household; policy B gives $1,000
         # to a $200k household. Same dollars — utilitarian is indifferent,
@@ -71,6 +90,29 @@ class TestIsoelastic:
             Isoelastic(eta=-1.0)
         with pytest.raises(ValueError):
             Isoelastic(income_floor=0.0)
+
+
+class TestWelfareOptimal:
+    def test_require_distinct_rejects_degenerate_values(self, small_electorate):
+        class NearlyTiedMetric:
+            def per_policy(self, electorate):
+                return np.array([1e-6, 1e-6 + 5e-16])
+
+        financed = apply_financing(small_electorate, "per_capita")
+        np.testing.assert_allclose(
+            Utilitarian().per_policy(financed), [0.0, 0.0], atol=1e-9
+        )
+
+        assert welfare_optimal(Utilitarian(), financed) == 0
+        with pytest.raises(ValueError, match="degenerate welfare ranking"):
+            welfare_optimal(Utilitarian(), financed, require_distinct=True)
+        with pytest.raises(ValueError, match="degenerate welfare ranking"):
+            welfare_optimal(NearlyTiedMetric(), financed, require_distinct=True)
+
+    def test_require_distinct_accepts_separated_values(self, small_electorate):
+        assert (
+            welfare_optimal(Utilitarian(), small_electorate, require_distinct=True) == 1
+        )
 
 
 class TestFinancing:
