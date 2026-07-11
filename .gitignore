@@ -1,23 +1,26 @@
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
-
-# Virtual environments
-env/
-venv/
-
-# Byte-compiled / optimized / DLL files
-*.pyc
-*.pyo
-*.pyd
-
-# Distribution / packaging
+*.egg-info/
 build/
 dist/
-*.egg-info/
 
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
+# Environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Scratch build intermediates (per-scenario engine outputs)
+data/intermediate/
 
 # Logs
 *.log

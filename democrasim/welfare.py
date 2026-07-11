@@ -1,0 +1,122 @@
+"""Welfare functionals and financing: ranking policies by measured impacts.
+
+A welfare metric maps an electorate to one scalar per policy — the social
+value of enacting that policy relative to current law. All metrics count
+each household's dollars once (rows are adults; contributions are divided by
+``hh_adults``), so utilitarian welfare of a policy equals the engine-computed
+total household dollars it distributes.
+
+Financing closes the budget. The impact deltas produced by a tax-benefit
+engine are *gross*: a tax cut shows only winners because the engine does not
+distribute the deficit. :func:`apply_financing` subtracts each policy's total
+cost back out of household incomes under an explicit, labeled rule, making
+every policy budget-neutral by construction. With balanced budgets,
+utilitarian welfare is ~0 for every policy and the welfare ranking is purely
+distributional — which is where inequality-averse metrics earn their keep.
+"""
+
+from dataclasses import dataclass
+from typing import Literal, Protocol, runtime_checkable
+
+import numpy as np
+
+from democrasim.electorate import Electorate, FloatArray
+
+type FinancingMode = Literal["none", "per_capita", "proportional"]
+
+
+@runtime_checkable
+class WelfareMetric(Protocol):
+    def per_policy(self, electorate: Electorate) -> FloatArray:
+        """Welfare change of each policy vs current law. ``(n_policies,)``"""
+        ...
+
+
+def welfare_optimal(metric: WelfareMetric, electorate: Electorate) -> int:
+    """Index of the policy the metric ranks highest."""
+    return int(np.argmax(metric.per_policy(electorate)))
+
+
+@dataclass(frozen=True)
+class Utilitarian:
+    """Total dollars, one per household: Σ weight·delta / hh_adults."""
+
+    def per_policy(self, electorate: Electorate) -> FloatArray:
+        return electorate.household_dollars()
+
+
+@dataclass(frozen=True)
+class Isoelastic:
+    """Isoelastic (CRRA) social welfare over household net incomes.
+
+    Welfare change of a policy is ``Σ (weight/hh_adults)·[u(y₁) − u(y₀)]``
+    with ``u(y) = y^(1−η)/(1−η)`` (``ln y`` at η=1). η=0 recovers
+    utilitarian dollars; higher η weights gains to poorer households more.
+
+    Real microdata contains zero and negative net incomes, where CRRA
+    utility is undefined, so incomes are floored: ``y₀ = max(y, floor)``
+    and ``y₁ = max(y₀ + δ, floor)``. Flooring *before* the delta applies
+    means gains to deep-negative-income households count (at the floor's
+    high marginal utility) rather than silently vanishing, and losses
+    cannot push utility-relevant income below the floor. The floor is an
+    explicit modeling choice, not a data-cleaning step; results at high η
+    can be sensitive to it.
+    """
+
+    eta: float = 1.0
+    income_floor: float = 1_000.0
+
+    def __post_init__(self) -> None:
+        if self.eta < 0:
+            raise ValueError("eta must be >= 0")
+        if self.income_floor <= 0:
+            raise ValueError("income_floor must be positive")
+
+    def _u(self, floored_income: FloatArray) -> FloatArray:
+        if self.eta == 1.0:
+            return np.log(floored_income)
+        return floored_income ** (1.0 - self.eta) / (1.0 - self.eta)
+
+    def per_policy(self, electorate: Electorate) -> FloatArray:
+        share = electorate.weights / electorate.hh_adults
+        floored = np.maximum(electorate.base_income, self.income_floor)
+        base_utility = self._u(floored)
+        out = np.empty(electorate.n_policies)
+        for j in range(electorate.n_policies):
+            reformed = np.maximum(floored + electorate.deltas[:, j], self.income_floor)
+            out[j] = float(share @ (self._u(reformed) - base_utility))
+        return out
+
+
+def apply_financing(electorate: Electorate, mode: FinancingMode) -> Electorate:
+    """Return an electorate whose deltas are net of financing each policy.
+
+    Modes:
+        none: Gross engine deltas, unchanged (deficits are invisible).
+        per_capita: Every adult bears an equal share of each policy's total
+            cost (a household of two adults bears two shares). A lump-sum
+            levy — regressive relative to income.
+        proportional: Each household bears a share of the cost proportional
+            to its (nonnegative) baseline net income — a flat levy on income.
+
+    Under both financing rules each policy's utilitarian total is zero by
+    construction (up to float precision): the same dollars distributed are
+    collected back.
+    """
+    if mode == "none":
+        return electorate
+    cost = electorate.household_dollars()  # (p,) dollars distributed
+    if mode == "per_capita":
+        levy_per_adult = cost / electorate.population
+        # Household burden = adults in household × per-adult levy.
+        burden = np.outer(electorate.hh_adults, levy_per_adult)
+    elif mode == "proportional":
+        income = np.maximum(electorate.base_income, 0.0)
+        income_mass = float((electorate.weights / electorate.hh_adults) @ income)
+        if income_mass <= 0:
+            raise ValueError("no positive base income to finance against")
+        rates = cost / income_mass
+        burden = np.outer(income, rates)
+    else:
+        raise ValueError(f"unknown financing mode: {mode!r}")
+    return electorate.with_deltas(electorate.deltas - burden, note=f"financing={mode}")

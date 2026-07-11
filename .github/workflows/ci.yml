@@ -4,24 +4,27 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    branches: ["main"]
 
 jobs:
-  build-and-test:
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
         with:
-          python-version: "3.9"
+          python-version: "3.14"
+      - run: uv sync --group dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install .[dev]
-
-      - name: Run tests
-        run: |
-          pytest --maxfail=1 --disable-warnings -v
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+      - run: uv sync --group dev
+      # Engine-marked tests skip automatically when the policyengine stack
+      # is not installed; everything else runs on the committed artifact.
+      - run: uv run pytest
