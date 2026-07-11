@@ -1,7 +1,7 @@
 [project]
 name = "democrasim"
 version = "0.2.0"
-description = "Do elections track welfare when voters misperceive policy impacts? A simulation on real households and encoded reforms, with perception as the one labeled assumption."
+description = "Do elections track welfare when voters misperceive policy impacts? A simulation on real households and encoded reforms, with perception as the headline assumption."
 readme = "README.md"
 license = "Unlicense"
 requires-python = ">=3.14"

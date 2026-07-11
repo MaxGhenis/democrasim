@@ -3,24 +3,29 @@
 Do elections select the welfare-maximizing policy when voters misperceive
 how policies would affect them?
 
-Democrasim simulates that question with everything measured except the one
-thing nobody has measured yet:
+Democrasim simulates that question with the inputs measured and the
+behavioral layers labeled:
 
-- **The electorate is real households.** Every voter is a voting-age adult
-  from PolicyEngine's certified, Populace-backed US microdata — 120,408
-  adult rows representing 268M adults.
+- **The electorate is measured.** Every voter is a voting-age adult from
+  PolicyEngine's certified, population-calibrated Populace microdata —
+  120,408 records representing 268M adults.
 - **The platforms are actual encoded reforms.** Two federal tax changes
   with opposite incidence, budget-matched within 3% and labeled
   generically: *Policy A* raises the Child Tax Credit base amount to
-  $3,200 ($39.1B/year); *Policy B* caps the top marginal income tax rate
-  at 34% ($38.0B/year).
+  $3,200; *Policy B* caps the top marginal income tax rate at 34%. Their
+  totals — $39.1B and $38.0B a year of household net-income change — are
+  model quantities including state-tax interactions, not budget scores.
 - **The true impacts are engine-computed.** Each voter carries their
   household's change in annual net income under each policy, including
   knock-on effects through other taxes and benefits.
-- **Perception is the one labeled assumption.** How accurately voters see
+- **Perception is the headline assumption.** How accurately voters see
   their own stakes sits behind a small `PerceptionModel` interface, so a
   survey-estimated misperception distribution can drop in later without
   touching anything else ([#3](https://github.com/MaxGhenis/democrasim/issues/3)).
+  The other layers are assumptions too, and are stress-tested as such:
+  how each policy's cost is financed, the welfare metric, the electorate
+  size, and who turns out are explicit, swappable model choices — the
+  findings note reports how the results move under each.
 
 > **What this is and isn't.** A thought experiment about one mechanism:
 > self-interested voting under misperception of measured household
@@ -35,16 +40,18 @@ thing nobody has measured yet:
 The original Democrasim (preserved in git history) asked the same
 questions on invented numbers: abstract policy "values," normal
 distributions, placeholder welfare. Rebuilding on measured impacts moved
-every headline result — details and figures in
-[docs/findings.md](docs/findings.md):
+every headline result — details, figures, and stress tests in
+[docs/findings.md](docs/findings.md), which was revised against four
+independent referee reports (archived with the adjudication in
+[docs/reviews/](docs/reviews/)):
 
 | | Toy worlds | Measured households |
 |---|---|---|
 | Stakes | everyone has one, similar size | 76% of adults ≈ $0 gross; a fifth have $1,000s |
-| Accuracy needed to track welfare | sharp threshold just above coin flip (jury theorem) | ~0.52 mean ranking accuracy — but see next row |
-| More accuracy always helps? | yes (monotone) | **no** — at perfect accuracy the trivial-stakes majority's $4/year financing margin outvotes every large stake, and tracking collapses; moderate noise restores it |
-| Moment-matched Gaussian world | — | never tracks at all: with smooth unimodal margins the election is a permanent coin flip |
-| Systematic bias | one more parameter | ~$219/voter/year of perceived bias flips an election that noise 5× larger cannot |
+| Accuracy needed to track welfare | sharp threshold just above a coin flip (jury theorem) | ≈0.52 mean ranking accuracy at 10,001 voters — an n-specific number that falls toward 0.5 as the electorate grows (closed form at any size via `analytic_plurality_curve`) |
+| More accuracy always helps? | yes (monotone) | **no** — at perfect accuracy the outcome is decided by the *sign* of the two policies' $4/year residual cost gap, a welfare-irrelevant quantity, so tracking is welfare-independent there; moderate noise silences that margin and restores perfect tracking. The ceiling (accuracy ≈0.69) survives at every electorate size |
+| Moment-matched Gaussian world | — | no tracking band at 10,001 voters (smooth, near-centered margins) — though its sub-point vote margin resolves to near-certainty at national scale; what's shape-robust is the *absence* of the measured world's certainty band |
+| Systematic bias | one more parameter | ≈$221/voter/year of shared bias flips an election that independent noise 5× larger cannot |
 
 ![Accuracy curve](docs/figures/accuracy_curve.png)
 
@@ -93,17 +100,20 @@ policy budget-neutral under an explicit rule (`per_capita`,
 `proportional`) before the headline experiments; the financing rule is an
 assumption and is stress-tested in the findings.
 
-## The one labeled assumption
+## The headline assumption: perception
 
 `LinearGaussianPerception(noise_sd, bias, attenuation)` says a voter's
 belief about their own stake is `attenuation · truth + bias + N(0, σ²)` —
-exactly the regression a perception survey would estimate.
-Accuracy is reported on a survey-comparable scale: the mean probability a
-voter correctly ranks the two policies for their own household (0.5 =
-coin flip, 1 = perfect), so the x-axis of every sweep is a quantity a
-survey can locate US voters on. `GroupedPerception` varies the model by
-demographic cell; any object with a `perceive(electorate, rng)` method —
-including one fitted to survey data — slots in unchanged.
+exactly the regression a perception survey would estimate, and those
+*parameters* are where survey comparability lives. Sweeps also report a
+derived accuracy coordinate (the mean probability a voter correctly ranks
+the two policies for their own household), useful for intuition but not a
+sufficient statistic: it depends on the financing rule's margins, and
+shared bias can raise it while tracking collapses — the findings plot
+every curve against the σ primitive as well. `GroupedPerception` varies
+the model by demographic cell; any object with a
+`perceive(electorate, rng)` method — including one fitted to survey
+data — slots in unchanged.
 
 ## The measured artifact
 
@@ -124,12 +134,18 @@ uv run democrasim build-data        # ~20 min: 3 simulations, one per subprocess
 ## Development
 
 ```bash
-uv run pytest            # 90 behavioral tests; artifact tests run off the committed data
+uv run pytest            # 133 behavioral tests; artifact tests run off the committed data
 uv run ruff check .
 uv run ruff format .
+uv run python scripts/robustness.py      # every stress row behind the findings
+uv run python scripts/descriptives.py    # every descriptive number behind the findings
 uv run python scripts/make_notebook.py   # re-execute docs/demo.ipynb
-uv run python scripts/robustness.py      # the findings' assumption-stress runs
 ```
+
+`tests/test_findings_regression.py` pins the artifact facts the findings
+rest on — most fragilely, the sign of the residual cost gap between the
+two policies — so an engine rebuild that moves the findings' world fails
+loudly instead of silently inverting the conclusions.
 
 ## Roadmap
 

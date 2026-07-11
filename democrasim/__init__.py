@@ -1,10 +1,12 @@
 """Democrasim: do elections track welfare when voters misperceive impacts?
 
-An election simulation where everything except perception is measured:
-real households (certified Populace-backed US microdata), actual encoded
-reforms with opposite incidence, and engine-computed per-household impacts.
-Perception — how accurately voters see their own stakes — is the one labeled
-assumption, held behind an interface a measured distribution can drop into.
+An election simulation with measured inputs: households from certified,
+population-calibrated US microdata (Populace), actual encoded reforms with
+opposite incidence, and engine-computed per-household impacts.
+Perception — how accurately voters see their own stakes — is the headline
+assumption, held behind an interface a measured distribution can drop into;
+financing, the welfare metric, and electorate size are further labeled,
+stress-tested model layers.
 
 A thought experiment about one mechanism. Not political science, and never
 election prediction.

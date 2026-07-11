@@ -3,7 +3,7 @@
     "generator": "scripts/descriptives.py",
     "democrasim_version": "0.2.0",
     "artifact": "us_2026_measured",
-    "artifact_sha256": "3bb4ad9193da6b696070acaa633fe93911ce8dc0266e92bf163ae0398a66efcc"
+    "artifact_sha256": "5cd1499d0d5dfecdc3779c443886f86608ff83720d1d88da0d55a55c8631c10c"
   },
   "gross_totals_bn": [
     39.104,

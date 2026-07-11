@@ -214,3 +214,17 @@ Identical mandates, very different strengths. **Fable** referees went deeper on 
 **Strong**: Wilson intervals; `welfare_optimal` tie tolerance + degenerate-metric warning; η=0 docstring/special case; σ-primary axes; ~half-page related-work; IRV indifference policy; `_phi`/`toward` guards; keep household_id in the artifact; strip local path from meta.
 
 **Optional**: RNG substreams, equivalence-scale sensitivity, household-correlated noise, analytic large-n plurality mode.
+
+---
+
+**Postscript (same day):** the revision plan above was applied in full on
+this branch — builder validation hardening with failure-path tests and a
+regenerated artifact (household_id added; all prior columns byte-equal),
+degenerate-input guards across the core, Wilson intervals and per-point RNG
+substreams, committed generators for every result file, a findings-regression
+test module pinning the cost-gap sign, the analytic any-n tracking curve with
+an n-sensitivity section, the sign-flip counterfactual, and rewritten
+findings/README implementing the welfare-independence, n-indexing, approval-
+benchmark, and accuracy-axis reframes plus the related-work positioning. Two
+Codex workers (isolated worktrees) implemented the builder and core-guard
+changes; the main session implemented the rest and reviewed all of it.

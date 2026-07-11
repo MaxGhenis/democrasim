@@ -4,17 +4,19 @@
   "tracking_target": 0.9,
   "welfare_optimal": "Policy A",
   "thresholds_ranking_accuracy": {
-    "measured": 0.5207667291008212,
+    "measured": 0.5215378777469054,
     "toy_matched": null,
-    "toy_homogeneous": 0.5074571038900835
+    "toy_homogeneous": 0.5068703194875932
   },
   "bias": {
     "toward": "Policy B",
     "noise_sd": 1000.0,
-    "tolerance_dollars": 200.0
+    "tolerance_dollars": 220.74074074074076,
+    "grid": "coarse plus auto-refined bracket around the 50% crossing"
   },
   "mean_absolute_margin_measured": 651.7286025389409,
   "n_elections": 240,
   "n_voters": 10001,
+  "n_voters_note": "tracking probabilities and thresholds are specific to this electorate size; see the analytic n-sensitivity results in docs/results/robustness_n_sensitivity.csv",
   "seed": 42
 }

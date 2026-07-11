@@ -106,18 +106,23 @@ def abstention_rows(financed: Electorate) -> dict:
 
 
 def n_sensitivity(financed: Electorate) -> dict:
-    """Analytic tracking curves and 90% bands by electorate size."""
+    """Analytic tracking curves, 90% bands, and figure by electorate size."""
+    from democrasim import figures
+
     noise = [0.0, *np.geomspace(10.0, 100_000.0, 25).tolist()]
     frames = []
+    named = []
     bands = {}
     for n in N_GRID:
         curve = analytic_plurality_curve(
             financed, noise_sds=noise, n_voters=n, welfare=Isoelastic()
         )
+        key = "inf" if n is None else str(n)
+        named.append((curve, "268M (limit)" if n is None else f"{n:,}"))
+        curve = curve.copy()
         curve.insert(0, "n_voters", -1 if n is None else n)
         frames.append(curve)
         tracked = curve[curve["p_tracked"] >= 0.9]["mean_ranking_accuracy"]
-        key = "inf" if n is None else str(n)
         bands[key] = (
             None
             if tracked.empty
@@ -126,6 +131,10 @@ def n_sensitivity(financed: Electorate) -> dict:
         print(f"    n={key:>8}: 90% tracking accuracy band = {bands[key]}")
     pd.concat(frames, ignore_index=True).to_csv(
         OUT / "robustness_n_sensitivity.csv", index=False
+    )
+    figures.save_figures(
+        {"n_sensitivity": figures.n_sensitivity(*zip(*named, strict=True))},
+        OUT.parent / "figures",
     )
     return bands
 

@@ -5,16 +5,18 @@ Guidance for AI assistants working in this repository.
 ## What this is
 
 Democrasim asks one question: **do elections select the welfare-maximizing
-policy when voters misperceive how policies would affect them?** Everything
-except perception is measured:
+policy when voters misperceive how policies would affect them?** The inputs
+are measured; the behavioral layers are labeled assumptions:
 
-- Electorate = real US households (PolicyEngine's certified Populace-backed
-  microdata), one voting-age adult per row.
+- Electorate = US households from PolicyEngine's certified,
+  population-calibrated Populace microdata, one voting-age adult per row.
 - Platforms = actual encoded tax reforms with opposite incidence, labeled
   generically (Policy A / Policy B — never real candidates or parties).
 - True impacts = engine-computed per-household net income deltas.
-- Perception = the one labeled assumption, behind the `PerceptionModel`
-  interface, designed for a survey-measured distribution to drop in later.
+- Perception = the headline assumption, behind the `PerceptionModel`
+  interface, designed for a survey-measured distribution to drop in later;
+  financing, welfare metric, and electorate size are labeled model layers,
+  stress-tested in docs/findings.md.
 
 This is a thought experiment about one mechanism, not political science and
 never election prediction. Keep platform labels generic and neutral.
