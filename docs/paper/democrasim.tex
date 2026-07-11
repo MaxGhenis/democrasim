@@ -16,11 +16,8 @@
 plurality welfare tracking with microsimulated household impacts}
 \author{Max Ghenis\thanks{max@maxghenis.com. Code, data artifact, and every
 number's regeneration script: \url{https://github.com/MaxGhenis/democrasim}.
-The author co-founded PolicyEngine, whose open models and data this personal
-project uses. Four author-commissioned AI referee reports (two Claude, two Codex
-reviewers; independent of one another) and the author's responses, which
-produced major revisions to an earlier draft, are archived in the
-repository.}}
+The author co-founded PolicyEngine, whose open models and data this
+personal project uses.}}
 \date{July 11, 2026}
 
 \begin{document}
@@ -41,8 +38,7 @@ the headline assumption. For plurality the model admits an analytic
 normal approximation at any electorate size, exact in the
 large-population limit. Measured stakes are two-cliffed: net of financing, three-quarters of
 adults hold under \$25 a year while over a fifth hold more than \$500,
-and this structure overturns the toy-model intuitions the exercise began
-with.
+and this structure overturns standard toy-model intuitions.
 Tracking is non-monotone in accuracy: at perfect information the outcome is
 decided by the \emph{sign} of a \$4.10-per-adult financing residual --- a
 welfare-irrelevant quantity --- while moderate noise (\(\sigma \approx
@@ -77,10 +73,9 @@ models tie what elections aggregate to the responsiveness of vote
 probabilities \citep{coughlin1981, lindbeck1987}.
 
 What this paper adds is not a new mechanism but a new input quality.
-Simulation exercises in this tradition (including my own earlier model,
-preserved in the repository's history) typically invent the key quantity --- the distribution of what
-voters stand to gain or lose --- and the invented distributions turn out to
-drive the conclusions. Here the inputs are measured and the behavioral layers are explicitly
+Simulation exercises in this tradition typically invent the key
+quantity --- the distribution of what voters stand to gain or lose ---
+and the invented distributions drive the conclusions. Here the inputs are measured and the behavioral layers are explicitly
 labeled. The electorate is population-calibrated microdata; the platforms are
 actual encoded reforms; the stakes are computed by a tax-benefit
 microsimulation engine, household by household, including interactions
@@ -302,9 +297,8 @@ collapses toward 0.5 as \(n\) grows. The ceiling is pinned by an
 expected-vote-share crossing that does not move with \(n\); the 90\%
 boundary reaches it (\(\approx 0.69\)) from \(n = 1{,}001\) onward, with
 only the smallest electorate (0.641 at \(n = 101\)) held below it by
-sampling noise. Any reported ``accuracy threshold for elections to work''
-that does not state its electorate size is a sample-size artifact --- a
-correction that applies to my own earlier model.
+sampling noise. Any reported ``accuracy threshold for elections to work'' that does not
+state its electorate size is a sample-size artifact.
 
 \subsection{Bias, not noise, is the cheap attack}\label{sec:bias}
 
