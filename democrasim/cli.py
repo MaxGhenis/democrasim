@@ -19,6 +19,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 from democrasim.election import ElectionSpec
 from democrasim.electorate import Electorate
@@ -131,23 +132,46 @@ def sweep(args: argparse.Namespace) -> None:
         )
         print(f"[sweep] {key}: threshold@{TRACKING_TARGET:.0%} = {thresholds[key]:.3f}")
 
-    # 3: systematic bias toward the policy welfare ranks lower.
+    # 3: systematic bias toward the policy welfare ranks lower. Two stages:
+    # a coarse grid for the curve, then an automatic refinement between the
+    # two coarse points bracketing the 50% crossing, so the reported
+    # tolerance is not an artifact of coarse-grid interpolation. Both
+    # stages land in one CSV.
     welfare_by_policy = spec.welfare.per_policy(measured)
     toward = int(np.argmin(welfare_by_policy))
-    bias_frame = bias_sweep(
-        measured,
-        bias_dollars=DEFAULT_BIAS_GRID,
-        toward=toward,
-        noise_sd=args.bias_noise_sd,
-        spec=spec,
-        n_elections=n_elections,
-        seed=args.seed,
+
+    def run_bias(grid: list[float], seed: int) -> pd.DataFrame:
+        return bias_sweep(
+            measured,
+            bias_dollars=grid,
+            toward=toward,
+            noise_sd=args.bias_noise_sd,
+            spec=spec,
+            n_elections=n_elections,
+            seed=seed,
+        )
+
+    coarse = run_bias(DEFAULT_BIAS_GRID, args.seed)
+    win_column = f"p_win_{toward}"
+    frames = [coarse]
+    crossing = np.flatnonzero(coarse[win_column].to_numpy() >= 0.5)
+    if len(crossing) and crossing[0] > 0:
+        lo = float(coarse["bias_dollars"].iloc[crossing[0] - 1])
+        hi = float(coarse["bias_dollars"].iloc[crossing[0]])
+        fine_grid = np.linspace(lo, hi, 10)[1:-1].tolist()
+        # seed+1: the refinement gets its own substream family.
+        frames.append(run_bias(fine_grid, args.seed + 1))
+    bias_frame = (
+        pd.concat(frames, ignore_index=True)
+        .sort_values("bias_dollars")
+        .reset_index(drop=True)
     )
+    bias_frame.attrs.update(coarse.attrs)
     bias_frame.to_csv(results_dir / "bias_sweep_measured.csv", index=False)
     bias_tolerance = find_threshold(
-        bias_frame["bias_dollars"], bias_frame[f"p_win_{toward}"], target=0.5
+        bias_frame["bias_dollars"], bias_frame[win_column], target=0.5
     )
-    print(f"[sweep] bias tolerance (P(win)=50%): ${bias_tolerance:,.0f}")
+    print(f"[sweep] bias tolerance (P(win)=50%, refined grid): ${bias_tolerance:,.0f}")
 
     # 4: voting rules on the measured electorate.
     rule_sweeps, rule_names = [], []
@@ -191,10 +215,16 @@ def sweep(args: argparse.Namespace) -> None:
             "tolerance_dollars": (
                 bias_tolerance if np.isfinite(bias_tolerance) else None
             ),
+            "grid": "coarse plus auto-refined bracket around the 50% crossing",
         },
         "mean_absolute_margin_measured": _mean_absolute_margin(measured),
         "n_elections": n_elections,
         "n_voters": args.n_voters,
+        "n_voters_note": (
+            "tracking probabilities and thresholds are specific to this "
+            "electorate size; see the analytic n-sensitivity results in "
+            "docs/results/robustness_n_sensitivity.csv"
+        ),
         "seed": args.seed,
     }
     (results_dir / "headline.json").write_text(json.dumps(headline, indent=2) + "\n")
@@ -217,6 +247,14 @@ def sweep(args: argparse.Namespace) -> None:
                 [world_names[k] for k in ordered],
                 target=TRACKING_TARGET,
                 thresholds=[thresholds[k] for k in ordered],
+            ),
+            # Same sweeps against the noise primitive — the accuracy axis
+            # is a derived, configuration-specific coordinate.
+            "accuracy_curve_sigma": figures.accuracy_curve(
+                [sweeps[k] for k in ordered],
+                [world_names[k] for k in ordered],
+                target=TRACKING_TARGET,
+                axis="noise",
             ),
             "bias_curve": figures.bias_curve(
                 [bias_frame],

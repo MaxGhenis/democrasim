@@ -25,10 +25,19 @@ never election prediction. Keep platform labels generic and neutral.
 uv sync --group dev              # core dev environment (no engine)
 uv run pytest                    # test suite (engine tests skip if absent)
 uv run ruff check . && uv run ruff format .
-uv run democrasim sweep          # experiments on the committed artifact
+uv run democrasim sweep          # headline experiments -> docs/results + figures
+uv run python scripts/robustness.py    # stress rows behind docs/findings.md
+uv run python scripts/descriptives.py  # descriptive numbers behind findings §1-3
+uv run python scripts/make_notebook.py # re-execute docs/demo.ipynb
 uv sync --extra engine --group dev   # only to rebuild the measured dataset
 uv run democrasim build-data     # regenerate democrasim/data artifact
 ```
+
+Every number quoted in README.md or docs/findings.md must trace to a file in
+docs/results/ produced by one of the commands above, and
+tests/test_findings_regression.py pins the artifact facts the findings rest
+on (most fragilely: the sign of the cost gap between the two policies). If a
+rebuild trips those tests, the findings note must be re-derived, not patched.
 
 ## Architecture
 

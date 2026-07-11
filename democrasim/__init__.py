@@ -15,6 +15,7 @@ from democrasim.election import ElectionResult, ElectionSpec, run_election
 from democrasim.electorate import Electorate, weighted_quantile
 from democrasim.experiments import (
     accuracy_sweep,
+    analytic_plurality_curve,
     bias_sweep,
     find_threshold,
     run_elections,
@@ -64,6 +65,7 @@ __all__ = [
     "VotingRule",
     "WelfareMetric",
     "accuracy_sweep",
+    "analytic_plurality_curve",
     "apply_financing",
     "artifact_metadata",
     "bias_sweep",

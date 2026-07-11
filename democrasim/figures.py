@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from democrasim.electorate import Electorate
+from democrasim.electorate import Electorate, FloatArray
 
 # Reference palette (validated set; see dataviz skill palette.md).
 SURFACE = "#fcfcfb"
@@ -162,30 +162,53 @@ def margin_distribution(
         return fig
 
 
+def _tracking_band(ax: plt.Axes, frame: pd.DataFrame, x: FloatArray, j: int) -> None:
+    """95% Wilson band (falls back to the Wald band for old frames)."""
+    if {"p_tracked_lo", "p_tracked_hi"} <= set(frame.columns):
+        lo = frame["p_tracked_lo"].to_numpy()
+        hi = frame["p_tracked_hi"].to_numpy()
+    else:
+        y = frame["p_tracked"].to_numpy()
+        se = frame["p_tracked_se"].to_numpy()
+        lo, hi = y - 1.96 * se, y + 1.96 * se
+    ax.fill_between(x, lo, hi, color=SERIES[j], alpha=0.15, linewidth=0)
+
+
 def accuracy_curve(
     sweeps: Sequence[pd.DataFrame],
     names: Sequence[str],
     *,
     target: float | None = 0.9,
     thresholds: Sequence[float] | None = None,
+    axis: str = "accuracy",
 ) -> plt.Figure:
-    """P(elects the welfare-optimal policy) vs mean ranking accuracy."""
+    """P(elects the welfare-optimal policy) per world, with Wilson bands.
+
+    ``axis="accuracy"`` plots against mean ranking accuracy (the derived,
+    config-specific coordinate); ``axis="noise"`` plots against the
+    perception-noise primitive σ on a log scale. The same sweeps feed both.
+    """
+    if axis not in ("accuracy", "noise"):
+        raise ValueError("axis must be 'accuracy' or 'noise'")
+    x_column = "mean_ranking_accuracy" if axis == "accuracy" else "noise_sd"
     with plt.rc_context(_RC):
         fig, ax = _new_axes((7.0, 4.2))
         for j, (sweep, name) in enumerate(zip(sweeps, names, strict=True)):
-            frame = sweep.sort_values("mean_ranking_accuracy")
-            x = frame["mean_ranking_accuracy"].to_numpy()
+            frame = sweep.sort_values(x_column)
+            if axis == "noise":
+                # log axis: place σ=0 at a nominal position below the grid
+                frame = frame[frame["noise_sd"] > 0]
+            x = frame[x_column].to_numpy()
             y = frame["p_tracked"].to_numpy()
-            se = frame["p_tracked_se"].to_numpy()
-            ax.fill_between(
-                x,
-                y - 1.96 * se,
-                y + 1.96 * se,
-                color=SERIES[j],
-                alpha=0.15,
-                linewidth=0,
-            )
+            _tracking_band(ax, frame, x, j)
             ax.plot(x, y, color=SERIES[j], label=name)
+        if axis == "noise":
+            ax.set_xscale("log")
+            ax.set_xlabel(
+                "perception noise σ, dollars per year (log scale; σ=0 omitted)"
+            )
+        else:
+            ax.set_xlabel("mean probability a voter correctly ranks the two policies")
         if target is not None:
             ax.axhline(target, color=BASELINE, linewidth=1.0, linestyle=(0, (4, 4)))
             ax.text(
@@ -196,7 +219,7 @@ def accuracy_curve(
                 fontsize=8.5,
                 color=INK_MUTED,
             )
-        if thresholds:
+        if thresholds and axis == "accuracy":
             for j, threshold in enumerate(thresholds):
                 if np.isfinite(threshold):
                     ax.axvline(
@@ -206,11 +229,40 @@ def accuracy_curve(
                         linestyle=(0, (2, 3)),
                         alpha=0.7,
                     )
-        ax.set_xlabel("mean probability a voter correctly ranks the two policies")
         ax.set_ylabel("share of elections electing the\nwelfare-optimal policy")
         ax.set_ylim(-0.02, 1.05)
         ax.set_title("Do elections track welfare as perception improves?")
         ax.legend(loc="lower right")
+        return fig
+
+
+def n_sensitivity(
+    curves: Sequence[pd.DataFrame],
+    names: Sequence[str],
+) -> plt.Figure:
+    """Analytic tracking vs noise for several electorate sizes.
+
+    Expects frames from :func:`democrasim.analytic_plurality_curve`; the
+    point is that Monte Carlo thresholds are properties of the electorate
+    size, not of the electorate alone.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        for j, (curve, name) in enumerate(zip(curves, names, strict=True)):
+            frame = curve[curve["noise_sd"] > 0].sort_values("noise_sd")
+            ax.plot(
+                frame["noise_sd"].to_numpy(),
+                frame["p_tracked"].to_numpy(),
+                color=SERIES[j % len(SERIES)],
+                label=name,
+            )
+        ax.set_xscale("log")
+        ax.axhline(0.9, color=BASELINE, linewidth=1.0, linestyle=(0, (4, 4)))
+        ax.set_xlabel("perception noise σ, dollars per year (log scale)")
+        ax.set_ylabel("P(welfare-optimal policy wins), analytic")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Electorate size moves the tracking window")
+        ax.legend(loc="lower left", title="sampled voters")
         return fig
 
 
@@ -288,6 +340,7 @@ __all__: Iterable[str] = [
     "bias_curve",
     "impact_distribution",
     "margin_distribution",
+    "n_sensitivity",
     "rule_comparison",
     "save_figures",
 ]
