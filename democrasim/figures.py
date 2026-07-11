@@ -322,6 +322,50 @@ def rule_comparison(sweeps: Sequence[pd.DataFrame], names: Sequence[str]) -> plt
         return fig
 
 
+def strategic_positions(frame: pd.DataFrame) -> plt.Figure:
+    """Equilibrium platform intensity vs perception noise, by selfish weight.
+
+    Expects the strategic_equilibria frame: for each (selfish_weight, sigma),
+    the mean enacted Policy-A intensity across pure Nash equilibria and
+    candidate 1's iterated-best-response proposal.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        weights = sorted(frame["selfish_weight"].unique())
+        # Coincident series (identical curves for different weights) get the
+        # wide-translucent-underlay treatment so both stay visible.
+        solid = (
+            {"linewidth": 2.0},
+            {"linewidth": 4.5, "alpha": 0.35},
+            {"linewidth": 2.0},
+        )
+        for j, weight in enumerate(weights):
+            sub = frame[frame["selfish_weight"] == weight].sort_values("sigma")
+            positive = sub[sub["sigma"] > 0]
+            ax.plot(
+                positive["sigma"],
+                positive["mean_enacted_alpha"],
+                color=SERIES[j],
+                label=f"selfish weight {weight:g} (enacted)",
+                **solid[j % len(solid)],
+            )
+            ax.plot(
+                positive["sigma"],
+                positive["ibr_position_1_alpha"],
+                color=SERIES[j],
+                linewidth=1.2,
+                linestyle=(0, (3, 3)),
+                label=f"selfish weight {weight:g} (proposal)",
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel("perception noise σ, dollars per year (log scale; σ=0 omitted)")
+        ax.set_ylabel("Policy-A intensity α")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Noise relaxes electoral discipline on self-serving platforms")
+        ax.legend(loc="upper left", fontsize=8)
+        return fig
+
+
 def save_figures(figures: dict[str, plt.Figure], directory: Path | str) -> list[Path]:
     """Write each figure as PNG into ``directory``; returns paths."""
     directory = Path(directory)
@@ -343,4 +387,5 @@ __all__: Iterable[str] = [
     "n_sensitivity",
     "rule_comparison",
     "save_figures",
+    "strategic_positions",
 ]

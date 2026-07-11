@@ -134,7 +134,7 @@ uv run democrasim build-data        # ~20 min: 3 simulations, one per subprocess
 ## Development
 
 ```bash
-uv run pytest            # 133 behavioral tests; artifact tests run off the committed data
+uv run pytest            # 146 behavioral tests; artifact tests run off the committed data
 uv run ruff check .
 uv run ruff format .
 uv run python scripts/robustness.py      # every stress row behind the findings
@@ -147,11 +147,21 @@ rest on — most fragilely, the sign of the residual cost gap between the
 two policies — so an engine rebuild that moves the findings' world fails
 loudly instead of silently inverting the conclusions.
 
+## Endogenous platforms
+
+`democrasim.strategic` closes the loop: two candidates — households from
+the data, each mixing a selfish component (their own net delta) with a
+societal one (a welfare metric with their own inequality aversion) —
+pick positions in a shared 2D policy space spanned by the measured
+incidence vectors, and pure Nash equilibria are computed exactly.
+Perfect information disciplines platforms to the status quo through
+undercutting; noise relaxes the discipline and self-serving programs
+scale with it; competition filters platforms by constituency breadth,
+not welfare. Details, validation of the interpolated policy space, and
+every number: [docs/strategic.md](docs/strategic.md).
+
 ## Roadmap
 
-- [#2](https://github.com/MaxGhenis/democrasim/issues/2) — strategic
-  (Nash) candidate positioning on measured impacts, rebuilt from the old
-  model's equilibrium layer.
 - [#3](https://github.com/MaxGhenis/democrasim/issues/3) — replace the
   parametric perception assumption with a survey-measured misperception
   distribution.

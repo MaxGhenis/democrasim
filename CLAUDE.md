@@ -31,6 +31,7 @@ uv run democrasim sweep          # headline experiments -> docs/results + figure
 uv run python scripts/robustness.py    # stress rows behind docs/findings.md
 uv run python scripts/descriptives.py  # descriptive numbers behind findings §1-3
 uv run python scripts/make_notebook.py # re-execute docs/demo.ipynb
+uv run python scripts/strategic_experiments.py  # Nash equilibria behind docs/strategic.md
 uv sync --extra engine --group dev   # only to rebuild the measured dataset
 uv run democrasim build-data     # regenerate democrasim/data artifact
 ```
@@ -51,7 +52,8 @@ democrasim/
   welfare.py      # Utilitarian / Isoelastic functionals + financing modes
   election.py     # one election: sample -> perceive -> vote -> compare to welfare
   experiments.py  # accuracy sweeps, threshold finder, bias sweeps
-  toy.py          # moment-matched Gaussian comparator (the old model's world)
+  strategic.py    # endogenous platforms: exact Nash on the 2D policy space
+  toy.py          # moment-matched Gaussian comparator (labeled synthetic worlds)
   data.py         # load the committed measured artifact
   engine/build.py # regenerates the artifact (subprocess per simulation)
   cli.py          # argparse CLI: build-data / sweep / demo
