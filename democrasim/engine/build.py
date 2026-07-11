@@ -6,9 +6,11 @@ plus one per policy — then merges intermediates into the committed artifact.
 One simulation per process is a hard rule: two engine simulations in one
 kernel fragment the allocator and can exhaust memory even after ``del``.
 
-Every extraction is validated against MicroSeries weighted aggregates before
-the artifact is written, so the artifact cannot silently disagree with what
-the engine reports through its own weighting machinery.
+Before writing, every scenario's extraction is checked against its
+MicroSeries weighted aggregate; household IDs must be unique and identical
+across scenarios and states; reform and person weights must exactly match
+baseline household weights; adult-row dollars must reconcile to each
+household; and excluded zero-adult dollars must remain negligible.
 """
 
 import argparse
@@ -33,6 +35,8 @@ SCENARIOS = [BASELINE] + [p["column"].removeprefix("delta_") for p in POLICIES]
 
 #: Extracted aggregates must match MicroSeries aggregates to this rel. tol.
 EXTRACTION_RTOL = 1e-6
+#: Adult-row allocations must reproduce household dollars to this rel. tol.
+ADULT_RECONCILIATION_RTOL = 1e-9
 #: Max share of a policy's absolute dollars allowed in zero-adult households.
 ZERO_ADULT_TOLERANCE = 0.005
 
@@ -75,6 +79,17 @@ def _release_manifest() -> dict:
         "default_dataset",
     )
     return {k: us[k] for k in keep if k in us}
+
+
+def _sanitize_bundle(value: object) -> object:
+    """Replace machine-local absolute paths in bundle provenance."""
+    if isinstance(value, str):
+        return Path(value).name if value.startswith("/") else value
+    if isinstance(value, dict):
+        return {key: _sanitize_bundle(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_sanitize_bundle(item) for item in value]
+    return value
 
 
 def verify() -> None:
@@ -128,7 +143,7 @@ def run_scenario(scenario: str, intermediate_dir: Path) -> None:
         # must reproduce from the extracted arrays.
         "microseries_net_income_total": float(net_income.sum()),
         "n_households": len(households),
-        "bundle": getattr(simulation, "policyengine_bundle", None),
+        "bundle": _sanitize_bundle(getattr(simulation, "policyengine_bundle", None)),
     }
 
     if scenario == BASELINE:
@@ -172,29 +187,78 @@ def _load_intermediates(
     baseline = pd.read_parquet(intermediate_dir / "baseline.households.parquet")
     states = pd.read_parquet(intermediate_dir / "baseline.states.parquet")
     persons = pd.read_parquet(intermediate_dir / "baseline.persons.parquet")
-    stats = {
-        scenario: json.loads((intermediate_dir / f"{scenario}.stats.json").read_text())
+    reformed = {
+        scenario: pd.read_parquet(intermediate_dir / f"{scenario}.households.parquet")
         for scenario in SCENARIOS
+        if scenario != BASELINE
     }
+    stats = {}
+    for scenario in SCENARIOS:
+        scenario_stats = json.loads(
+            (intermediate_dir / f"{scenario}.stats.json").read_text()
+        )
+        scenario_stats["bundle"] = _sanitize_bundle(scenario_stats.get("bundle"))
+        stats[scenario] = scenario_stats
 
-    households = baseline.rename(columns={"net_income": "base_income"}).merge(
-        states, on="household_id", validate="1:1"
-    )
-    for policy in POLICIES:
-        scenario = policy["column"].removeprefix("delta_")
-        reformed = pd.read_parquet(intermediate_dir / f"{scenario}.households.parquet")
+    scenario_frames = {BASELINE: baseline, "states": states, **reformed}
+    for scenario, frame in scenario_frames.items():
+        duplicate_rows = frame["household_id"].duplicated(keep=False)
+        if duplicate_rows.any():
+            raise AssertionError(
+                f"{scenario}: {int(duplicate_rows.sum())} rows have "
+                "duplicate household_id values"
+            )
+
+    baseline_ids = set(baseline["household_id"])
+    for scenario, frame in scenario_frames.items():
+        if scenario == BASELINE:
+            continue
+        scenario_ids = set(frame["household_id"])
+        missing = baseline_ids - scenario_ids
+        extra = scenario_ids - baseline_ids
+        if missing or extra:
+            raise AssertionError(
+                f"{scenario}: household_id set differs from baseline "
+                f"(missing={len(missing)}, extra={len(extra)})"
+            )
+
+    for scenario, frame in {BASELINE: baseline, **reformed}.items():
         # Extraction fidelity: the extracted arrays must reproduce the
-        # MicroSeries weighted total exactly (same weights, same values).
-        extracted_total = float((reformed["net_income"] * reformed["weight"]).sum())
+        # MicroSeries weighted total (same weights, same values).
+        extracted_total = float((frame["net_income"] * frame["weight"]).sum())
         recorded = stats[scenario]["microseries_net_income_total"]
         if not np.isclose(extracted_total, recorded, rtol=EXTRACTION_RTOL):
             raise AssertionError(
                 f"{scenario}: extracted total {extracted_total:,.0f} != "
                 f"MicroSeries total {recorded:,.0f}"
             )
-        reformed = reformed.rename(columns={"net_income": f"income_{scenario}"})
+
+    for scenario, frame in reformed.items():
+        compared_weights = baseline[["household_id", "weight"]].merge(
+            frame[["household_id", "weight"]],
+            on="household_id",
+            suffixes=("_baseline", "_reform"),
+            validate="1:1",
+        )
+        mismatched = (
+            compared_weights["weight_baseline"] != compared_weights["weight_reform"]
+        )
+        if mismatched.any():
+            raise AssertionError(
+                f"{scenario}: {int(mismatched.sum())} household weights "
+                "differ from baseline"
+            )
+
+    households = baseline.rename(columns={"net_income": "base_income"}).merge(
+        states, on="household_id", validate="1:1"
+    )
+    for policy in POLICIES:
+        scenario = policy["column"].removeprefix("delta_")
+        scenario_frame = reformed[scenario].rename(
+            columns={"net_income": f"income_{scenario}"}
+        )
         households = households.merge(
-            reformed[["household_id", f"income_{scenario}"]],
+            scenario_frame[["household_id", f"income_{scenario}"]],
             on="household_id",
             validate="1:1",
         )
@@ -207,6 +271,39 @@ def _load_intermediates(
 def combine(intermediate_dir: Path, out_dir: Path) -> None:
     """Merge intermediates into the adult-level artifact, with validation."""
     households, persons, stats = _load_intermediates(intermediate_dir)
+
+    compared_person_weights = persons[["household_id", "weight"]].merge(
+        households[["household_id", "weight"]],
+        on="household_id",
+        how="left",
+        suffixes=("_person", "_household"),
+        indicator=True,
+        validate="m:1",
+    )
+    unknown_households = compared_person_weights["_merge"] != "both"
+    if unknown_households.any():
+        raise AssertionError(
+            "persons: "
+            f"{int(unknown_households.sum())} rows have household_id values "
+            "absent from baseline"
+        )
+    person_weight_diffs = (
+        compared_person_weights["weight_person"]
+        - compared_person_weights["weight_household"]
+    ).abs()
+    person_weight_max_abs_diff = (
+        float(person_weight_diffs.max()) if len(person_weight_diffs) else 0.0
+    )
+    mismatched_person_weights = (
+        compared_person_weights["weight_person"]
+        != compared_person_weights["weight_household"]
+    )
+    if mismatched_person_weights.any():
+        raise AssertionError(
+            "persons: "
+            f"{int(mismatched_person_weights.sum())} weights differ from "
+            "baseline household weights"
+        )
 
     composition = (
         persons.assign(is_adult=persons["age"] >= 18)
@@ -264,17 +361,63 @@ def combine(intermediate_dir: Path, out_dir: Path) -> None:
     # Consistency: summing each household's dollars once across adult rows
     # must reproduce the household-level weighted totals.
     costs = {}
+    reconciliation_max_relative_discrepancy = {}
     for policy in POLICIES:
         column = policy["column"]
         household_total = float((households[column] * households["weight"]).sum())
         adult_total = float(
             (adults[column] * adults["weight"] / adults["hh_adults"]).sum()
         )
-        if not np.isclose(adult_total, household_total, rtol=1e-3):
+        if not np.isclose(
+            adult_total,
+            household_total,
+            rtol=ADULT_RECONCILIATION_RTOL,
+            atol=0.0,
+        ):
             raise AssertionError(
                 f"{column}: adult-row total {adult_total:,.0f} != "
                 f"household total {household_total:,.0f}"
             )
+
+        adult_dollars = (
+            adults.assign(
+                _allocated_dollars=(
+                    adults[column] * adults["weight"] / adults["hh_adults"]
+                )
+            )
+            .groupby("household_id", sort=False)["_allocated_dollars"]
+            .sum()
+        )
+        household_dollars = (
+            households.set_index("household_id")[column]
+            * (households.set_index("household_id")["weight"])
+        )
+        adult_dollars = adult_dollars.reindex(household_dollars.index)
+        absolute_discrepancy = (adult_dollars - household_dollars).abs()
+        relative_discrepancy = np.divide(
+            absolute_discrepancy.to_numpy(),
+            household_dollars.abs().to_numpy(),
+            out=np.zeros(len(household_dollars), dtype=np.float64),
+            where=household_dollars.to_numpy() != 0,
+        )
+        zero_dollars_mismatch = (household_dollars.to_numpy() == 0) & (
+            absolute_discrepancy.to_numpy() != 0
+        )
+        relative_discrepancy[zero_dollars_mismatch] = np.inf
+        reconciled = np.isclose(
+            adult_dollars.to_numpy(),
+            household_dollars.to_numpy(),
+            rtol=ADULT_RECONCILIATION_RTOL,
+            atol=0.0,
+        )
+        if not reconciled.all():
+            raise AssertionError(
+                f"{column}: {int((~reconciled).sum())} households do not "
+                "reconcile across adult rows"
+            )
+        reconciliation_max_relative_discrepancy[column] = float(
+            relative_discrepancy.max(initial=0.0)
+        )
         costs[policy["label"]] = {
             "total_household_dollars_bn": household_total / 1e9,
             "share_households_gaining": float(
@@ -292,6 +435,7 @@ def combine(intermediate_dir: Path, out_dir: Path) -> None:
             "state": pd.Categorical(adults["state"]),
             "household_size": adults["household_size"].astype(np.int16),
             "n_children": adults["n_children"].astype(np.int16),
+            "household_id": adults["household_id"].astype(np.int64),
         }
     )
 
@@ -324,6 +468,11 @@ def combine(intermediate_dir: Path, out_dir: Path) -> None:
         },
         "validations": {
             "extraction_rtol": EXTRACTION_RTOL,
+            "person_household_weight_max_abs_diff": person_weight_max_abs_diff,
+            "adult_household_reconciliation_rtol": ADULT_RECONCILIATION_RTOL,
+            "adult_household_reconciliation_max_relative_discrepancy": (
+                reconciliation_max_relative_discrepancy
+            ),
             "zero_adult_exclusions": exclusions,
         },
         "built_at": datetime.now(UTC).isoformat(timespec="seconds"),

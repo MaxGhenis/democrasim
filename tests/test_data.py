@@ -32,6 +32,18 @@ def meta():
     return democrasim.artifact_metadata()
 
 
+def _nested_strings(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield from _nested_strings(key)
+            yield from _nested_strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _nested_strings(item)
+
+
 class TestArtifactStructure:
     def test_two_generic_policies(self, measured):
         assert measured.policy_labels == ("Policy A", "Policy B")
@@ -47,6 +59,41 @@ class TestArtifactStructure:
 
     def test_source_names_the_engine(self, measured):
         assert "PolicyEngine" in measured.source
+
+    def test_household_once_values_are_verifiable(self, measured, meta):
+        household_frame = measured.demographics[["household_id"]].copy()
+        household_frame["weight"] = measured.weights
+        household_frame["base_income"] = measured.base_income
+        household_frame["hh_adults"] = measured.hh_adults
+        policy_columns = []
+        for index, policy in enumerate(meta["policies"]):
+            column = policy["column"]
+            policy_columns.append(column)
+            household_frame[column] = measured.deltas[:, index]
+
+        grouped = household_frame.groupby("household_id")
+        for column in ["weight", "base_income", "hh_adults", *policy_columns]:
+            assert grouped[column].nunique(dropna=False).eq(1).all()
+        assert grouped.size().eq(grouped["hh_adults"].first()).all()
+
+        adult_totals = np.array(
+            [
+                (
+                    household_frame["weight"]
+                    * household_frame[column]
+                    / household_frame["hh_adults"]
+                ).sum()
+                for column in policy_columns
+            ]
+        )
+        households_once = grouped.first()
+        household_totals = np.array(
+            [
+                (households_once["weight"] * households_once[column]).sum()
+                for column in policy_columns
+            ]
+        )
+        np.testing.assert_allclose(adult_totals, household_totals, rtol=1e-9, atol=0.0)
 
 
 class TestMeasuredImpacts:
@@ -79,7 +126,7 @@ class TestMeasuredImpacts:
     def test_artifact_matches_engine_totals(self, measured, meta):
         for j, policy in enumerate(meta["policies"]):
             recorded = policy["total_household_dollars_bn"] * 1e9
-            assert measured.household_dollars()[j] == pytest.approx(recorded, rel=1e-3)
+            assert measured.household_dollars()[j] == pytest.approx(recorded, rel=1e-6)
 
 
 class TestProvenance:
@@ -97,3 +144,16 @@ class TestProvenance:
     def test_meta_counts_match_artifact(self, measured, meta):
         assert meta["counts"]["adult_rows"] == measured.n_voters
         assert meta["counts"]["adult_population"] == pytest.approx(measured.population)
+
+    def test_meta_records_builder_validations(self, meta):
+        validations = meta["validations"]
+        assert validations["person_household_weight_max_abs_diff"] == 0.0
+        assert validations["adult_household_reconciliation_rtol"] == 1e-9
+        discrepancies = validations[
+            "adult_household_reconciliation_max_relative_discrepancy"
+        ]
+        assert set(discrepancies) == {"delta_policy_a", "delta_policy_b"}
+        assert max(discrepancies.values()) <= 1e-9
+
+    def test_meta_contains_no_machine_local_user_paths(self, meta):
+        assert not any("/Users/" in value for value in _nested_strings(meta))

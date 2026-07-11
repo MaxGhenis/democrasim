@@ -57,7 +57,7 @@
       "certified_by": null,
       "runtime_dataset": "populace_us_2024",
       "runtime_dataset_uri": "hf://policyengine/populace-us/populace_us_2024.h5@populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z",
-      "runtime_dataset_source": "/Users/maxghenis/.cache/huggingface/hub/datasets--policyengine--populace-us/snapshots/fa2f8104e62a0f1cce400a495c5487d1a10544cb/populace_us_2024.h5",
+      "runtime_dataset_source": "populace_us_2024.h5",
       "managed_by": "policyengine.py"
     },
     "release_manifest": {
@@ -90,6 +90,12 @@
   },
   "validations": {
     "extraction_rtol": 1e-06,
+    "person_household_weight_max_abs_diff": 0.0,
+    "adult_household_reconciliation_rtol": 1e-09,
+    "adult_household_reconciliation_max_relative_discrepancy": {
+      "delta_policy_a": 1.1400867005744103e-16,
+      "delta_policy_b": 0.0
+    },
     "zero_adult_exclusions": {
       "delta_policy_a": {
         "zero_adult_households": 0,
@@ -101,5 +107,5 @@
       }
     }
   },
-  "built_at": "2026-07-11T17:38:38+00:00"
+  "built_at": "2026-07-11T18:59:41+00:00"
 }
