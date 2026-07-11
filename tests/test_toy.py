@@ -34,6 +34,43 @@ class TestMomentMatchedToy:
         toy = moment_matched_toy(small_electorate, rng, n=10_000)
         assert np.all(toy.base_income > 0)
 
+    def test_preserves_impact_income_correlation(self, rng):
+        # Incidence is the welfare signal: a toy that dropped the
+        # impact-income correlation would rank policies arbitrarily.
+        # Build a source where policy 0 pays the poor and policy 1 the rich.
+        n = 5_000
+        income = rng.lognormal(11, 0.7, n)
+        deltas = np.column_stack(
+            [
+                2_000.0 * (income < np.median(income)),
+                2_000.0 * (income >= np.median(income)),
+            ]
+        )
+        from democrasim import Electorate
+
+        source = Electorate(
+            deltas=deltas,
+            weights=np.ones(n),
+            base_income=income,
+            hh_adults=np.ones(n),
+            policy_labels=("Policy A", "Policy B"),
+            source="TEST",
+        )
+        toy = moment_matched_toy(source, rng, n=100_000)
+
+        def corr(x, y):
+            return float(np.corrcoef(x, y)[0, 1])
+
+        log_income_source = np.log(source.base_income)
+        log_income_toy = np.log(toy.base_income)
+        for j in range(2):
+            got = corr(toy.deltas[:, j], log_income_toy)
+            want = corr(source.deltas[:, j], log_income_source)
+            assert got == pytest.approx(want, abs=0.05)
+        # And the signs are the economically meaningful part.
+        assert corr(toy.deltas[:, 0], log_income_toy) < -0.3
+        assert corr(toy.deltas[:, 1], log_income_toy) > 0.3
+
 
 class TestHomogeneousToy:
     def test_every_voter_has_the_same_margin(self):

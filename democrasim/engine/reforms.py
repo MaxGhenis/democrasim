@@ -38,12 +38,12 @@ POLICIES: list[dict] = [
         "label": "Policy B",
         "column": "delta_policy_b",
         "description": (
-            "Cut the top two federal marginal income tax rates (37% and "
-            "35% brackets), from 2026 onward."
+            "Cap the top federal marginal income tax rate at 34% (the 35% "
+            "and 37% brackets both drop to 34%), from 2026 onward."
         ),
         "reform": {
             "gov.irs.income.bracket.rates.7": {PERIOD: 0.34},
-            "gov.irs.income.bracket.rates.6": {PERIOD: 0.33},
+            "gov.irs.income.bracket.rates.6": {PERIOD: 0.34},
         },
     },
 ]

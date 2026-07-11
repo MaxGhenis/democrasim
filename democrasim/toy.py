@@ -6,11 +6,15 @@ here carries a ``TOY`` source string and must be presented as synthetic.
 
 Two comparators:
 
-- :func:`moment_matched_toy` — multivariate-Gaussian impacts matched to the
-  measured electorate's weighted mean vector and covariance matrix. Any
-  difference between its results and the measured results is attributable
-  purely to distribution *shape* (skew, tails, the mass of voters with no
-  stake) — the moments are identical by construction.
+- :func:`moment_matched_toy` — a jointly Gaussian world matched to the
+  measured electorate's weighted means and covariances of
+  ``(impact_A, impact_B, log income)``. Matching the income covariance
+  matters: welfare metrics read the *incidence* of a policy (who gains,
+  ordered by income), so a toy that matched impact moments alone would
+  quietly destroy the welfare signal along with the shape. With all first
+  and second moments held, differences from the measured results are
+  attributable to distribution shape — skew, tails, and the mass of voters
+  with no stake.
 - :func:`homogeneous_toy` — the old model's implicit world: every voter has
   the same stake in the outcome, so heterogeneity comes only from perception
   noise. This is what "candidate A's economic value is 1.0, B's is 0.8"
@@ -19,26 +23,7 @@ Two comparators:
 
 import numpy as np
 
-from democrasim.electorate import Electorate, FloatArray
-
-
-def _matched_lognormal_income(
-    base_income: FloatArray,
-    weights: FloatArray,
-    n: int,
-    rng: np.random.Generator,
-) -> FloatArray:
-    """Lognormal incomes matched to the weighted mean and sd of the source.
-
-    Incomes below $1 are floored before matching — the lognormal is a
-    smooth stand-in for the toy world, not a model of the real left tail.
-    """
-    y = np.maximum(base_income, 1.0)
-    mean = float(np.average(y, weights=weights))
-    var = float(np.average((y - mean) ** 2, weights=weights))
-    sigma2 = np.log(1.0 + var / mean**2)
-    mu = np.log(mean) - sigma2 / 2.0
-    return rng.lognormal(mu, np.sqrt(sigma2), size=n)
+from democrasim.electorate import Electorate
 
 
 def moment_matched_toy(
@@ -47,27 +32,30 @@ def moment_matched_toy(
     *,
     n: int | None = None,
 ) -> Electorate:
-    """Gaussian world with the measured electorate's first two moments.
+    """Gaussian world matched to the measured first and second moments.
 
-    Impacts are drawn iid from a multivariate normal whose mean vector and
-    covariance matrix equal the weighted moments of ``electorate.deltas``.
-    Weights are uniform and every voter is their household's only adult, as
-    the old model implicitly assumed.
+    ``(δ_1, …, δ_p, ln max(income, $1))`` is drawn from a multivariate
+    normal whose mean vector and covariance matrix equal the weighted
+    moments of the source electorate; income is then exponentiated (so its
+    marginal is lognormal and its rank-correlation with impacts is
+    preserved). Weights are uniform and every voter is their household's
+    only adult, as the old model implicitly assumed.
     """
     n = electorate.n_voters if n is None else n
-    mean = np.average(electorate.deltas, axis=0, weights=electorate.weights)
-    cov = np.cov(electorate.deltas.T, aweights=electorate.weights, ddof=0)
-    deltas = rng.multivariate_normal(mean, cov, size=n)
+    log_income = np.log(np.maximum(electorate.base_income, 1.0))
+    joint = np.column_stack([electorate.deltas, log_income])
+    mean = np.average(joint, axis=0, weights=electorate.weights)
+    cov = np.cov(joint.T, aweights=electorate.weights, ddof=0)
+    draws = rng.multivariate_normal(mean, cov, size=n)
     return Electorate(
-        deltas=deltas,
+        deltas=draws[:, :-1],
         weights=np.ones(n),
-        base_income=_matched_lognormal_income(
-            electorate.base_income, electorate.weights, n, rng
-        ),
+        base_income=np.exp(draws[:, -1]),
         hh_adults=np.ones(n),
         policy_labels=electorate.policy_labels,
         source=(
-            f"TOY moment-matched Gaussian (mean/cov matched to: {electorate.source})"
+            "TOY moment-matched Gaussian (impact/log-income mean+cov "
+            f"matched to: {electorate.source})"
         ),
     )
 
