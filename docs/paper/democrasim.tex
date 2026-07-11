@@ -1,0 +1,408 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1.15in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage[round]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\captionsetup{font=small, labelfont=bf}
+
+\newcommand{\pkg}[1]{\texttt{#1}}
+
+\title{Elections on measured stakes:\\
+plurality welfare tracking with microsimulated household impacts}
+\author{Max Ghenis\thanks{max@maxghenis.com. Code, data artifact, and every
+number's regeneration script: \url{https://github.com/MaxGhenis/democrasim}.
+The author co-founded PolicyEngine, whose open models and data this personal
+project uses. Four independent AI referee reports (two Claude, two Codex
+reviewers) and the author's responses, which produced major revisions to an
+earlier draft of these results, are archived in the repository.}}
+\date{July 11, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Does plurality voting select the welfare-preferred policy when voters
+misperceive their own stakes? I study the question in a simulation where
+everything except perception is measured: the electorate is 120{,}408
+voting-age adults from certified, population-calibrated US microdata; the
+two platforms are actual encoded tax reforms with opposite incidence,
+budget-matched within 3\%; and each voter's stake is the tax engine's
+computed change in their household's net income, closed by an explicit
+financing rule. Perception is one labeled assumption --- truth plus Gaussian
+noise plus optional shared bias --- and the model admits a closed form at
+any electorate size. Measured stakes are two-cliffed: three-quarters of
+adults hold under \$25 a year while a fifth hold over \$500, and this
+structure overturns the toy-model intuitions the exercise began with.
+Tracking is non-monotone in accuracy: at perfect information the outcome is
+decided by the \emph{sign} of a \$4.10-per-adult financing residual --- a
+welfare-irrelevant quantity --- while moderate noise (\(\sigma \approx
+\$50\)--\$2{,}000) restores near-certain tracking by turning the
+trivial-stakes mass into canceling coin flips. Tracking thresholds are
+electorate-size statements that collapse toward 0.5 accuracy as \(n\) grows,
+while the failure ceiling is size-invariant. And shared misperception of
+\(\approx\$221\) per voter per year flips elections that \$1{,}000 of
+independent noise cannot move. The mechanisms are classical; the
+contribution is dollar-denominated calibration on measured microdata, a
+reusable open-source harness, and a direct path to replacing the perception
+assumption with survey estimates.
+\end{abstract}
+
+\section{Introduction}
+
+A large literature asks when majority voting aggregates dispersed
+information or dispersed interests into good collective choices. The
+Condorcet jury theorem gives the optimistic benchmark: homogeneous stakes
+and independent errors let even barely-informed majorities decide almost
+perfectly \citep{condorcet1785}. Its known failure modes are equally
+classical: correlated errors break the aggregation
+\citep{ladha1992, page1992, caplan2007}; intense minorities lose to
+indifferent majorities under one-person-one-vote \citep{dahl1956};
+rationally ignorant or effectively indifferent voters may abstain, for
+better or worse \citep{downs1957, feddersen1996}; and in probabilistic-voting
+models, idiosyncratic perception noise determines whether elections weight
+heads or stakes \citep{coughlin1981, lindbeck1987}.
+
+What this paper adds is not a new mechanism but a new input quality. Prior
+simulation exercises (including my own earlier model, preserved in the
+repository's history) invent the key quantity --- the distribution of what
+voters stand to gain or lose --- and the invented distributions turn out to
+drive the conclusions. Here every input except perception is measured or
+explicitly labeled. The electorate is real microdata; the platforms are
+actual encoded reforms; the stakes are computed by a tax-benefit
+microsimulation engine, household by household, including interactions
+across programs. On these inputs, several toy-model conclusions reverse,
+and the surviving ones acquire dollar denominations: how many dollars of
+noise elections tolerate (thousands), how many dollars of shared bias they
+do not (about \$221 per voter per year), and how many dollars of stake the
+decisive voting bloc holds at perfect information (\$4.10).
+
+Five results follow. First, measured stakes are nothing like the
+homogeneous or Gaussian stakes of standard toys: 76\% of adults have
+approximately \$0 at stake gross of financing, while a fifth hold stakes
+above \$500 (Section~\ref{sec:stakes}). Second, welfare tracking is
+non-monotone in perception accuracy, and its failure at perfect information
+is a knife-edge with a precise anatomy: the outcome becomes
+\emph{welfare-independent}, set by the sign of the residual cost gap
+between the two policies (Section~\ref{sec:knife}). Third, every tracking
+threshold is an electorate-size statement; a closed form places the Monte
+Carlo results on the full ladder from 101 voters to the large-population
+limit (Section~\ref{sec:n}). Fourth, elections in this environment are
+robust to large independent misperception and fragile to small shared
+misperception (Section~\ref{sec:bias}). Fifth, moment-matched Gaussian
+comparators --- even preserving impact--income covariance --- reproduce none
+of this structure, so calibrating stake \emph{shape} matters more than
+matching moments (Section~\ref{sec:toys}).
+
+The exercise is a thought experiment about one mechanism: self-interested
+voting on misperceived, engine-computed household impacts. It is not
+political science and predicts no elections; real voters weigh values,
+identity, and information far beyond their own net income
+\citep{bartels2005, stantcheva2021}. Platforms are labeled generically
+throughout.
+
+\section{Model}\label{sec:model}
+
+\paragraph{Electorate.} Each voter \(i\) is a voting-age adult carrying
+their household's true impact \(\delta_{ij}\) (dollars per year) under each
+policy \(j \in \{A, B\}\), a survey weight, baseline household net income,
+and the household's adult count \(a_i\). Voting is per adult; welfare
+counts each household's dollars once (contributions divide by \(a_i\)).
+
+\paragraph{Financing.} Engine impacts are gross: a tax cut shows only
+winners. The headline specification levies each policy's total cost equally
+per adult, making both policies budget-neutral by construction;
+a proportional-to-income levy and the unfinanced gross case are stress
+tests. Net stakes and the margin \(m_i = \delta_{iA} - \delta_{iB}\) are
+defined after financing.
+
+\paragraph{Welfare.} An isoelastic social welfare function over household
+net income (\(\eta = 1\), incomes floored at \$1{,}000) ranks the two
+policies; ``tracked'' means the election selects the \emph{ballot-best}
+policy, the higher-ranked of the two. Under this metric both financed
+policies score slightly below the status quo, which plurality does not
+offer; Section~\ref{sec:knife} returns to this.
+
+\paragraph{Perception and voting.} Voter \(i\) perceives
+\(\hat\delta_{ij} = \delta_{ij} + b_j + \varepsilon_{ij}\) with
+\(\varepsilon_{ij} \sim N(0, \sigma^2)\) i.i.d.\ across voters and
+policies, and \(b_j\) a shared bias. Under plurality with
+abstention at exact perceived indifference, voter \(i\) votes for \(A\)
+with probability
+\begin{equation}
+p_i(\sigma, b) \;=\; \Phi\!\left(\frac{m_i - (b_B - b_A)}{\sigma\sqrt{2}}\right),
+\label{eq:probit}
+\end{equation}
+so an election of \(n\) voters sampled with probability proportional to
+weight reduces to a multinomial over (\(A\), \(B\), abstain) with
+population-weighted mean probabilities \((\bar p_A, \bar p_B, \bar p_0)\).
+With \(g = \bar p_A - \bar p_B\), the probability that \(A\) wins is
+\(\Phi\!\big(ng / \sqrt{n(\bar p_A + \bar p_B - g^2)}\big)\) by the normal
+approximation, degenerating to a step function of \(g\) as
+\(n \to \infty\). All headline results use this closed form or Monte Carlo
+simulation that matches it; approval voting and instant-runoff variants are
+simulated directly.
+
+\section{Data and calibration}\label{sec:data}
+
+The electorate comes from PolicyEngine's certified, population-calibrated
+Populace microdata for the United States (57{,}240 households; 120{,}408
+adults representing 268 million), scored with \pkg{policyengine-us} 1.764.6
+for policy year 2026. Policy A raises the federal Child Tax Credit base
+amount from \$2{,}200 to \$3{,}200; Policy B caps the top two marginal
+income tax rates at 34\%. The engine scores them at \$39.1B and \$38.0B a
+year of household net income change (model totals including state-tax
+interactions, not budget scores) --- within 2.9\%, so neither platform is
+simply the larger transfer. Incidence is opposite: 9.9\% of Policy A's
+dollars reach the top income decile versus 99.7\% of Policy B's.
+
+The committed data artifact carries full provenance (engine versions,
+certified dataset revision and hash, reform parameter dictionaries) and
+passes builder validations that reconcile every extracted quantity against
+the engine's own weighted aggregates (worst relative discrepancy
+\(10^{-16}\)). Regression tests pin the artifact facts the results below
+depend on --- most fragilely, the sign of the cost gap --- so a future data
+rebuild cannot silently invert them.
+
+\section{Results}
+
+\subsection{Measured stakes are two-cliffed}\label{sec:stakes}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.86\linewidth]{figures/margin_distribution.png}
+\caption{Weighted cumulative distribution of \(|m_i|\), the true margin
+between the two policies per adult, net of per-capita financing. Measured
+households form a staircase --- 47\% of adults within \$10, 75.5\% within
+\$25, driven by the \$4.10-per-adult difference in the two policies'
+levies --- with a high-stakes tail. The two synthetic comparators used by
+toy models lack this structure.}
+\label{fig:margins}
+\end{figure}
+
+Gross of financing, 76\% of adults see approximately \$0 from both
+policies; Policy A's gains arrive in per-child quanta of about \$1{,}000
+for the 20\% of households with eligible children. Financing hands the
+untouched majority a small signed stake: the two levies differ by \$4.10
+per adult per year, so 75.5\% of adults hold margins under \$25 while
+19.9\% (all in households with children) hold pro-\(A\) margins above
+\$500 and 2.6\% hold pro-\(B\) margins below \(-\$500\)
+(Figure~\ref{fig:margins}). The weighted mean absolute margin, \$652,
+describes almost nobody.
+
+\subsection{Non-monotone tracking and the welfare-independence knife-edge}
+\label{sec:knife}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.86\linewidth]{figures/accuracy_curve.png}
+\caption{Share of 10{,}001-voter elections electing the ballot-best policy
+(240 elections per point; Wilson 95\% bands), against mean ranking
+accuracy --- the probability a voter correctly ranks the two policies for
+their own household. The homogeneous toy is the Condorcet jury theorem;
+the measured curve fails at \emph{both} ends.}
+\label{fig:accuracy}
+\end{figure}
+
+At 10{,}001 sampled voters, tracking is essentially perfect for noise
+\(\sigma\) between about \$50 and \$2{,}000 (every estimate 1.000, Wilson
+lower bounds 0.984) and collapses at both extremes
+(Figure~\ref{fig:accuracy}). The high-noise decay is ordinary. The
+perfect-information failure is not: at \(\sigma = 0\), 78.7\% of adults
+strictly prefer Policy B --- 76\% of them because of the \$4.10 levy gap
+alone --- and plurality elects \(B\) in every election, the opposite of the
+welfare ranking.
+
+Table~\ref{tab:knife} dissects the knife-edge. The direction is set
+entirely by the sign of the residual cost gap: rescaling Policy B to cost
+3\% \emph{more} than A flips perfect-information tracking from 0\% to
+100\% with the welfare ranking unchanged. The mass only rules while it
+votes: exact parity or unfinanced gross stakes leave it exactly
+indifferent, it abstains (turnout 24\%), and tracking holds from accuracy
+\(\approx 0.59\) through perfect information. A behavioral \$25
+indifference band does the same; a \$10 band does not, because multi-adult
+households' levy margins exceed it. Approval voting reaches the same
+outcome through self-silencing --- voters who perceive both policies as
+net losses approve neither --- though under the three-option ranking the
+welfare metric itself induces (status quo first), a 23\%-approval winner
+is still a welfare-reducing enactment; approval's property here is the
+filter, not welfare optimality.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccl}
+\toprule
+Variant (perfect information) & Tracked & Turnout & Decisive margin \\
+\midrule
+Per-capita financing (headline) & 0\% & 100\% & \(-\$4.10\) levy gap \\
+Proportional financing & 0\% & 99.8\% & same sign, income-scaled \\
+Sign-flip counterfactual (B costs $+3\%$) & 100\% & 100\% & \(+\$4.23\) levy gap \\
+Exact-parity counterfactual & 100\% & 24\% & \$0 (mass abstains) \\
+Gross stakes (no financing) & 100\% & 24\% & \$0 (mass abstains) \\
+Abstention band \$10 & 0\% & 53\% & multi-adult margins survive \\
+Abstention band \$25 & 100\% & 24\% & staircase silenced \\
+Approval voting & 100\% & 23\% & mass approves neither \\
+\bottomrule
+\end{tabular}
+\caption{The perfect-information knife-edge under stress. Counterfactual
+rows are synthetic rescalings of Policy B's gross impacts, labeled as such
+in the regeneration scripts.}
+\label{tab:knife}
+\end{table}
+
+Perfect information therefore does not make elections anti-track welfare;
+it makes them \emph{welfare-independent}, delegating the outcome to
+whichever side of an arbitrary residual the no-stakes bloc shares. Between
+the extremes, moderate misperception helps: noise converts four-dollar
+margins into fair coins that cancel, and the informed high-stakes minority
+decides. This is the probabilistic-voting transition of
+\citet{coughlin1981} and \citet{lindbeck1987} --- noise makes plurality
+weight stakes; vanishing noise reverts it to counting heads --- traversed
+numerically on measured stakes.
+
+\subsection{Thresholds are electorate-size statements}\label{sec:n}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.86\linewidth]{figures/n_sensitivity.png}
+\caption{Closed-form tracking probability by electorate size, per-capita
+financing. The entry edge is jury-theorem \(\sqrt{n}\) arithmetic; the
+exit edge (the knife-edge) is an expected-vote-share crossing and does not
+move.}
+\label{fig:n}
+\end{figure}
+
+The accuracy band in which tracking exceeds 90\% runs from 0.598--0.641 at
+\(n = 101\) to 0.502--0.689 in the large-population limit
+(Figure~\ref{fig:n}). The entry threshold is Condorcet arithmetic and
+collapses toward 0.5 as \(n\) grows; the \(\approx 0.69\) ceiling, where
+the trivial-stakes bloc's signed margin overtakes noise, is
+\(n\)-invariant. Any reported ``accuracy threshold for elections to work''
+that does not state its electorate size is a sample-size artifact --- a
+correction that applies to my own earlier model.
+
+\subsection{Bias, not noise, is the cheap attack}\label{sec:bias}
+
+Holding \(\sigma = \$1{,}000\) --- where unbiased elections track
+essentially always --- a shared misperception that Policy B is worth more
+than it is flips the median 10{,}001-voter election at \(\approx\$221\)
+per voter per year (1.7\% of elections flip at \$178, 97.5\% at \$267).
+That is one-third of the mean absolute stake and one-fifth of a single
+per-child credit step. The contrast instantiates the correlated-errors
+breakdown of jury aggregation \citep{ladha1992} and the
+miracle-of-aggregation debate \citep{page1992, caplan2007} in dollars:
+independent error in the thousands is harmless; shared error in the low
+hundreds is decisive.
+
+\subsection{Moment-matched toys reproduce none of it}\label{sec:toys}
+
+A Gaussian electorate matched to the measured means and covariances of
+(impact\(_A\), impact\(_B\), log income) --- preserving the incidence
+correlation that carries the welfare signal --- has smooth, nearly centered
+margins: its perfect-information vote margin is a fraction of a percentage
+point. At 10{,}001 voters it never reaches 90\% tracking; in the
+large-population limit it tracks with near-certainty. Neither behavior
+resembles the measured world's wide certainty band bounded by a
+knife-edge. The homogeneous-stakes toy (every voter holds the mean
+absolute margin) is the jury theorem, tracking from accuracy 0.507 at this
+\(n\). What separates the measured world from both is not its first or
+second moments but its shape: the coexistence of a nearly indifferent
+majority with a concentrated high-stakes minority.
+
+\section{Robustness and limitations}\label{sec:limits}
+
+The welfare ranking is stable across \(\eta \in \{0.5, 1, 2\}\) and under
+per-capita and square-root equivalence scales, but flips to Policy B at
+\(\eta \ge 3\), where the \$1{,}000 income floor's censoring of the
+poorest households' levies dominates; the ranking is a modeling choice and
+is reported as such. Both financing rules hand the no-stakes bloc its
+signed sliver; financing choices that zero it, or deficit financing that
+hides it, restore monotone tracking. Voters here are exclusively
+self-interested, static, and annual; candidates do not reposition
+(an endogenous-candidate extension is tracked in the repository). Errors
+are independent across voters --- including adults in the same household ---
+and across policies; household-correlated error would enlarge the
+effective levy-bloc signal.
+
+The binding limitation is that perception is assumed. The linear-Gaussian
+family is exactly what a survey regression of perceived on true impacts
+would estimate --- attenuation, bias, and residual dispersion, by
+demographic cell --- and the model's perception interface accepts a fitted
+empirical distribution without modification. Measured misperception of
+one's own tax incidence exists in the literature
+\citep{bartels2005, stantcheva2021} but not yet in the engine-computed,
+own-household form this model consumes; eliciting it is the natural next
+step, and its answer is a single point on the axes swept here.
+
+\section{Conclusion}
+
+On measured household stakes, the relationship between voter accuracy and
+welfare tracking inverts the toy intuition at both ends: elections track
+almost perfectly across two orders of magnitude of misperception, fail on
+a welfare-irrelevant residual at perfect information unless the
+trivial-stakes majority goes silent, scale their thresholds with
+electorate size, and trade a thousand dollars of noise tolerance for a
+two-hundred-dollar bias vulnerability. The mechanisms are old; the
+denominations are new. Whether real electorates sit on the tracking side
+of these numbers is now a measurement question.
+
+\begin{thebibliography}{12}
+\itemsep2pt
+
+\bibitem[Bartels(2005)]{bartels2005}
+Bartels, L.~M. (2005). Homer gets a tax cut: Inequality and public policy
+in the American mind. \emph{Perspectives on Politics}, 3(1), 15--31.
+
+\bibitem[Caplan(2007)]{caplan2007}
+Caplan, B. (2007). \emph{The Myth of the Rational Voter: Why Democracies
+Choose Bad Policies}. Princeton University Press.
+
+\bibitem[Condorcet(1785)]{condorcet1785}
+Condorcet, M.~J.~A.~N. de Caritat, Marquis de (1785). \emph{Essai sur
+l'application de l'analyse \`a la probabilit\'e des d\'ecisions rendues
+\`a la pluralit\'e des voix}. Paris.
+
+\bibitem[Coughlin and Nitzan(1981)]{coughlin1981}
+Coughlin, P., and Nitzan, S. (1981). Electoral outcomes with probabilistic
+voting and Nash social welfare maxima. \emph{Journal of Public Economics},
+15(1), 113--121.
+
+\bibitem[Dahl(1956)]{dahl1956}
+Dahl, R.~A. (1956). \emph{A Preface to Democratic Theory}. University of
+Chicago Press.
+
+\bibitem[Downs(1957)]{downs1957}
+Downs, A. (1957). \emph{An Economic Theory of Democracy}. Harper.
+
+\bibitem[Feddersen and Pesendorfer(1996)]{feddersen1996}
+Feddersen, T., and Pesendorfer, W. (1996). The swing voter's curse.
+\emph{American Economic Review}, 86(3), 408--424.
+
+\bibitem[Ladha(1992)]{ladha1992}
+Ladha, K.~K. (1992). The Condorcet jury theorem, free speech, and
+correlated votes. \emph{American Journal of Political Science}, 36(3),
+617--634.
+
+\bibitem[Lindbeck and Weibull(1987)]{lindbeck1987}
+Lindbeck, A., and Weibull, J.~W. (1987). Balanced-budget redistribution as
+the outcome of political competition. \emph{Public Choice}, 52(3),
+273--297.
+
+\bibitem[Page and Shapiro(1992)]{page1992}
+Page, B.~I., and Shapiro, R.~Y. (1992). \emph{The Rational Public: Fifty
+Years of Trends in Americans' Policy Preferences}. University of Chicago
+Press.
+
+\bibitem[Stantcheva(2021)]{stantcheva2021}
+Stantcheva, S. (2021). Understanding tax policy: How do people reason?
+\emph{Quarterly Journal of Economics}, 136(4), 2309--2369.
+
+\end{thebibliography}
+
+\end{document}
