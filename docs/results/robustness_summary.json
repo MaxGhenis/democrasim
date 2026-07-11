@@ -1,0 +1,105 @@
+{
+  "provenance": {
+    "generator": "scripts/robustness.py",
+    "democrasim_version": "0.2.0",
+    "artifact": "us_2026_measured",
+    "artifact_sha256": "5cd1499d0d5dfecdc3779c443886f86608ff83720d1d88da0d55a55c8631c10c",
+    "n_elections": 240,
+    "seed": 42,
+    "noise_grid": [
+      0.0,
+      10.0,
+      21.544346900318832,
+      46.41588833612777,
+      100.0,
+      215.44346900318823,
+      464.15888336127773,
+      1000.0,
+      2154.4346900318824,
+      4641.588833612777,
+      10000.0,
+      21544.346900318822,
+      46415.888336127726,
+      100000.0
+    ]
+  },
+  "proportional_isoelastic": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 0.0,
+    "turnout_at_perfect": 0.998215595107156,
+    "max_p_tracked": 1.0,
+    "threshold_accuracy_90": 0.5214190909360781
+  },
+  "none_utilitarian": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 0.243494400559944,
+    "max_p_tracked": 1.0,
+    "threshold_accuracy_90": 0.5861587911662387
+  },
+  "none_isoelastic": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 0.243494400559944,
+    "max_p_tracked": 1.0,
+    "threshold_accuracy_90": 0.5861587911662387
+  },
+  "exact_parity_per_capita": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 0.243494400559944,
+    "max_p_tracked": 1.0,
+    "threshold_accuracy_90": 0.5874606414722258
+  },
+  "sign_flip_per_capita": {
+    "welfare_optimal": "Policy A",
+    "p_tracked_at_perfect": 1.0,
+    "turnout_at_perfect": 1.0,
+    "max_p_tracked": 1.0,
+    "threshold_accuracy_90": 0.5212763628335155
+  },
+  "abstention_at_perfect": {
+    "abstain_below_10": {
+      "p_tracked": 0.0,
+      "mean_turnout": 0.5281
+    },
+    "abstain_below_25": {
+      "p_tracked": 1.0,
+      "mean_turnout": 0.2446
+    },
+    "abstain_below_100": {
+      "p_tracked": 1.0,
+      "mean_turnout": 0.2387
+    }
+  },
+  "n_sensitivity_accuracy_bands": {
+    "101": [
+      0.5983,
+      0.641
+    ],
+    "1001": [
+      0.5497,
+      0.6888
+    ],
+    "10001": [
+      0.52,
+      0.6888
+    ],
+    "100001": [
+      0.5105,
+      0.6888
+    ],
+    "1000001": [
+      0.5075,
+      0.6888
+    ],
+    "inf": [
+      0.5018,
+      0.6888
+    ]
+  },
+  "equivalence_scale_optimal": {
+    "per_capita": "Policy A",
+    "sqrt": "Policy A"
+  }
+}

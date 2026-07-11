@@ -1,107 +1,73 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI assistants working in this repository.
 
-## Build & Development Commands
+## What this is
+
+Democrasim asks one question: **do elections select the welfare-maximizing
+policy when voters misperceive how policies would affect them?** The inputs
+are measured; the behavioral layers are labeled assumptions:
+
+- Electorate = US households from PolicyEngine's certified,
+  population-calibrated Populace microdata, one voting-age adult per row.
+- Platforms = actual encoded tax reforms with opposite incidence, labeled
+  generically (Policy A / Policy B — never real candidates or parties).
+- True impacts = engine-computed per-household net income deltas.
+- Perception = the headline assumption, behind the `PerceptionModel`
+  interface, designed for a survey-measured distribution to drop in later;
+  financing, welfare metric, and electorate size are labeled model layers,
+  stress-tested in docs/findings.md.
+
+This is a thought experiment about one mechanism, not political science and
+never election prediction. Keep platform labels generic and neutral.
+
+## Commands
 
 ```bash
-# Install in development mode
-pip install -e ".[dev]"
-
-# Install with optional dependencies
-pip install -e ".[dev,examples,metrics]"
-
-# Run all tests
-pytest
-
-# Run a specific test file
-pytest tests/test_election.py
-
-# Run a specific test
-pytest tests/test_election.py::TestElection::test_run_election -v
-
-# Format code (88 char line length)
-black .
-
-# Lint
-flake8
-
-# Type check
-mypy democrasim
-
-# Run example scripts
-python examples/qaly_simulation.py
-python examples/inequality_simulation.py
-
-# Run Streamlit app (requires examples dependencies)
-streamlit run examples/streamlit_app.py
+uv sync --group dev              # core dev environment (no engine)
+uv run pytest                    # test suite (engine tests skip if absent)
+uv run ruff check . && uv run ruff format .
+uv run democrasim sweep          # headline experiments -> docs/results + figures
+uv run python scripts/robustness.py    # stress rows behind docs/findings.md
+uv run python scripts/descriptives.py  # descriptive numbers behind findings §1-3
+uv run python scripts/make_notebook.py # re-execute docs/demo.ipynb
+uv sync --extra engine --group dev   # only to rebuild the measured dataset
+uv run democrasim build-data     # regenerate democrasim/data artifact
 ```
 
-## Architecture Overview
+Every number quoted in README.md or docs/findings.md must trace to a file in
+docs/results/ produced by one of the commands above, and
+tests/test_findings_regression.py pins the artifact facts the findings rest
+on (most fragilely: the sign of the cost gap between the two policies). If a
+rebuild trips those tests, the findings note must be re-derived, not patched.
 
-Democrasim simulates how voter interventions affect election outcomes and policy metrics. The simulation flow is:
-
-```
-Interventions → Voter Behavior → Election → Winner → Policy Outcome (QALYs, inequality, etc.)
-```
-
-### Core Components (`democrasim/core/`)
-
-- **Voter** (`voter.py`): Central entity with multi-dimensional preferences (weights, accuracies, biases), turnout probability, and age. Voters perceive policy values with noise inversely proportional to their accuracy.
-
-- **Election** (`election.py`): `run_election(voters, candidate_policies, candidate_baseline)` - Each voter evaluates candidates by summing weighted perceived policy values plus baseline utility. Plurality winner returned.
-
-- **Policy** (`policy.py`): Named container for policy dimension values (e.g., `{"economic": 1.2, "environmental": 0.8}`).
-
-### Models (`democrasim/models/`)
-
-- **Candidate**: Wraps a Policy with an ID and baseline popularity score
-- **Intervention**: Defines effects that modify voter attributes:
-  - `accuracy_multipliers`: Improve/reduce voter accuracy per dimension
-  - `weight_multipliers`: Change how much voters care about dimensions
-  - `turnout_boost`/`turnout_mult`: Affect voting probability
-- **Outcome**: Maps winner ID to outcome value (e.g., QALYs)
-
-### Metrics (`democrasim/metrics/`)
-
-Placeholder functions for measuring policy outcomes:
-- `qaly.py`: QALY estimation from GDP growth and coverage expansion
-- `economic.py`: GDP growth calculation
-- `inequality.py`: Gini coefficient computation
-- `uncertainty.py`: Confidence interval calculation
-
-### Voter Preference Generation
-
-Voters are randomly generated using `VoterParams`:
-- Dimension weights: Beta distribution, normalized to sum to 1
-- Accuracies: Lognormal distribution
-- Biases: Normal(0, 0.2)
-- Turnout: Beta distribution
-
-Interventions are applied via `voter.apply_intervention(id, effect)` and stack multiplicatively.
-
-### Strategic Model (`democrasim/core/strategic.py`)
-
-General equilibrium model where candidates optimize policy positions:
+## Architecture
 
 ```
-Candidate objective:
-E[U] = P(win) · u(outcome_if_win) + (1-P(win)) · u(outcome_if_lose)
-
-Voter behavior:
-Vote for candidate whose perceived outcome is closest to ideal
+democrasim/
+  electorate.py   # Electorate: numpy arrays (deltas, weights, hh_adults, ...)
+  perception.py   # PerceptionModel protocol + LinearGaussianPerception
+  voting.py       # Plurality / Approval / InstantRunoff over perceived deltas
+  welfare.py      # Utilitarian / Isoelastic functionals + financing modes
+  election.py     # one election: sample -> perceive -> vote -> compare to welfare
+  experiments.py  # accuracy sweeps, threshold finder, bias sweeps
+  toy.py          # moment-matched Gaussian comparator (the old model's world)
+  data.py         # load the committed measured artifact
+  engine/build.py # regenerates the artifact (subprocess per simulation)
+  cli.py          # argparse CLI: build-data / sweep / demo
 ```
 
-Key components:
-- **PolicyOutcomeFunction**: Maps policy τ → outcome g (e.g., tax rate → Gini)
-- **StrategicVoter**: Has ideal outcome g*, perceives f(τ) with noise
-- **StrategicCandidate**: Optimizes τ to maximize expected policy utility
-- **find_equilibrium()**: Solves Nash equilibrium via iterated best response
+## House rules
 
-Run `python examples/strategic_equilibrium.py` to see how voter noise affects equilibrium.
-
-## Key Dependencies
-
-- **squigglepy**: Uncertainty quantification (listed but distributions currently use numpy directly)
-- **streamlit**: Interactive demo app (optional)
-- **lifetable, gini, scikit-learn**: Extended metrics (optional)
+- Python 3.14, `uv` (never pip), pytest with behavioral tests, full typing.
+- No Streamlit anywhere. Demo surface = notebook + CLI.
+- Engine work: never compute aggregates from raw weight arrays — use
+  MicroSeries (`.calc(...).sum()`); the artifact builder validates its
+  extracted arrays against MicroSeries aggregates before writing.
+- Reform dicts must carry explicit start AND end dates
+  (`{"param": {"2026-01-01.2100-12-31": value}}`).
+- Run at most one engine simulation per process (subprocess-per-scenario);
+  two sims in one kernel fragments the allocator and OOMs.
+- Never present simulation output as observed data; the artifact carries
+  provenance metadata and README/notebook state the data source.
+- Sentence case for headings.

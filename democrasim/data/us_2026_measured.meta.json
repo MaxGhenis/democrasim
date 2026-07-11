@@ -1,0 +1,111 @@
+{
+  "artifact": "us_2026_measured",
+  "source": "PolicyEngine US 1.764.6 (policyengine 4.20.4) on its certified default US dataset, policy year 2026; rows are adults 18+",
+  "row_definition": "One row per voting-age adult (18+). Impact columns are the adult's household-level change in annual net income vs current law; hh_adults supports counting each household once.",
+  "year": 2026,
+  "policies": [
+    {
+      "label": "Policy A",
+      "column": "delta_policy_a",
+      "description": "Raise the federal Child Tax Credit base amount from $2,200 to $3,200 per child, from 2026 onward.",
+      "reform": {
+        "gov.irs.credits.ctc.amount.base[0].amount": {
+          "2026-01-01.2100-12-31": 3200
+        }
+      },
+      "total_household_dollars_bn": 39.10431023659018,
+      "share_households_gaining": 0.20268976673793446
+    },
+    {
+      "label": "Policy B",
+      "column": "delta_policy_b",
+      "description": "Cap the top federal marginal income tax rate at 34% (the 35% and 37% brackets both drop to 34%), from 2026 onward.",
+      "reform": {
+        "gov.irs.income.bracket.rates.7": {
+          "2026-01-01.2100-12-31": 0.34
+        },
+        "gov.irs.income.bracket.rates.6": {
+          "2026-01-01.2100-12-31": 0.34
+        }
+      },
+      "total_household_dollars_bn": 38.00619262601044,
+      "share_households_gaining": 0.030945001320031668
+    }
+  ],
+  "engine": {
+    "versions": {
+      "policyengine": "4.20.4",
+      "policyengine-us": "1.764.6",
+      "policyengine-core": "3.30.0"
+    },
+    "release_bundle": {
+      "bundle_id": "us-4.20.4",
+      "country_id": "us",
+      "policyengine_version": "4.20.4",
+      "model_package": "policyengine-us",
+      "model_version": "1.764.6",
+      "data_package": "populace-data",
+      "data_version": "0.1.0",
+      "default_dataset": "populace_us_2024",
+      "default_dataset_uri": "hf://policyengine/populace-us/populace_us_2024.h5@populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z",
+      "certified_data_build_id": "populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z",
+      "certified_data_artifact_sha256": "9d1e460ddbc49c9b467b936f07edd4576ae2667ef39fdea2490bc5577c038d51",
+      "data_build_model_version": "1.764.6",
+      "data_build_model_git_sha": null,
+      "data_build_fingerprint": null,
+      "compatibility_basis": "exact_build_model_version",
+      "certified_by": null,
+      "runtime_dataset": "populace_us_2024",
+      "runtime_dataset_uri": "hf://policyengine/populace-us/populace_us_2024.h5@populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z",
+      "runtime_dataset_source": "populace_us_2024.h5",
+      "managed_by": "policyengine.py"
+    },
+    "release_manifest": {
+      "bundle_id": "us-4.20.4",
+      "certification": {
+        "built_with_model_version": "1.764.6",
+        "certified_by": "policyengine.py bundle certification",
+        "certified_for_model_version": "1.764.6",
+        "compatibility_basis": "built_with_model_package",
+        "data_build_id": "populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z"
+      },
+      "certified_data_artifact": {
+        "build_id": "populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z",
+        "data_package": {
+          "name": "populace-data",
+          "version": "0.1.0"
+        },
+        "dataset": "populace_us_2024",
+        "sha256": "9d1e460ddbc49c9b467b936f07edd4576ae2667ef39fdea2490bc5577c038d51",
+        "uri": "hf://policyengine/populace-us/populace_us_2024.h5@populace-us-2024-buildj-sparse-rmloss100-75d5add-20260710T094201Z"
+      },
+      "data_producer": "populace",
+      "default_dataset": "populace_us_2024"
+    }
+  },
+  "counts": {
+    "households": 57240,
+    "adult_rows": 120408,
+    "adult_population": 267550525.38182878
+  },
+  "validations": {
+    "extraction_rtol": 1e-06,
+    "person_household_weight_max_abs_diff": 0.0,
+    "adult_household_reconciliation_rtol": 1e-09,
+    "adult_household_reconciliation_max_relative_discrepancy": {
+      "delta_policy_a": 1.1400867005744103e-16,
+      "delta_policy_b": 0.0
+    },
+    "zero_adult_exclusions": {
+      "delta_policy_a": {
+        "zero_adult_households": 0,
+        "share_of_abs_dollars_excluded": 0.0
+      },
+      "delta_policy_b": {
+        "zero_adult_households": 0,
+        "share_of_abs_dollars_excluded": 0.0
+      }
+    }
+  },
+  "built_at": "2026-07-11T18:59:41+00:00"
+}

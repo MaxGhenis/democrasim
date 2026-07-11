@@ -1,0 +1,56 @@
+{
+  "provenance": {
+    "generator": "scripts/descriptives.py",
+    "democrasim_version": "0.2.0",
+    "artifact": "us_2026_measured",
+    "artifact_sha256": "5cd1499d0d5dfecdc3779c443886f86608ff83720d1d88da0d55a55c8631c10c"
+  },
+  "gross_totals_bn": [
+    39.104,
+    38.006
+  ],
+  "levy_per_adult": [
+    146.1567,
+    142.0524
+  ],
+  "levy_gap_per_adult": 4.1043,
+  "gross_dollars_top_decile_share": {
+    "Policy A": 0.09865309128644438,
+    "Policy B": 0.9971301899555243
+  },
+  "financed_margin": {
+    "mean_abs": 651.73,
+    "share_abs_below_10": 0.4721,
+    "share_abs_below_25": 0.7555,
+    "share_abs_below_100": 0.7614,
+    "share_abs_below_1000": 0.88,
+    "share_prefer_A": 0.2125,
+    "share_prefer_B": 0.7875
+  },
+  "gross_margin": {
+    "share_zero_both": 0.7576,
+    "share_prefer_A": 0.2125,
+    "share_prefer_B": 0.0298,
+    "share_indifferent": 0.7576
+  },
+  "high_stakes": {
+    "share_margin_above_500": 0.1992,
+    "kids_share_of_pro_A_500": 1.0,
+    "share_margin_below_minus_500": 0.0263
+  },
+  "welfare_isoelastic_eta1": [
+    -229517.0,
+    -514508.0
+  ],
+  "welfare_utilitarian_financed": [
+    -4.239e-06,
+    -4.053e-06
+  ],
+  "isoelastic_optimal_by_eta": {
+    "0.5": "Policy A",
+    "1.0": "Policy A",
+    "2.0": "Policy A",
+    "3.0": "Policy B",
+    "5.0": "Policy B"
+  }
+}
