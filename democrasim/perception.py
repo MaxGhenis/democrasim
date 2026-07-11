@@ -40,12 +40,18 @@ class PerceptionModel(Protocol):
 
 def _phi(z: FloatArray) -> FloatArray:
     """Standard normal CDF, vectorized, without a scipy dependency."""
+    if z.size == 0:
+        return np.empty(z.shape, dtype=np.float64)
     return 0.5 * (1.0 + np.vectorize(erf)(z / sqrt(2.0)))
 
 
 @dataclass(frozen=True)
 class LinearGaussianPerception:
     """``perceived = attenuation * true + bias + N(0, noise_sd²)``.
+
+    Noise is drawn iid per (voter, policy), so adults in the same household
+    perceive the same household delta with independent errors;
+    household-correlated errors are not modeled.
 
     Args:
         noise_sd: Standard deviation of idiosyncratic perception error, in
@@ -185,6 +191,8 @@ def ranking_accuracy(
     Uses the model's analytic formula when available; otherwise estimates by
     Monte Carlo with ``n_draws`` perception draws (requires ``rng``).
     """
+    if electorate.n_policies != 2:
+        raise ValueError("ranking accuracy is defined for two policies")
     analytic = getattr(model, "analytic_ranking_accuracy", None)
     if analytic is not None:
         per_voter = analytic(electorate)

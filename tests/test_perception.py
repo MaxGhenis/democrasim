@@ -5,6 +5,7 @@ import pytest
 
 from democrasim import (
     PERFECT_PERCEPTION,
+    Electorate,
     GroupedPerception,
     LinearGaussianPerception,
     ranking_accuracy,
@@ -68,6 +69,16 @@ class TestRankingAccuracy:
         weights = small_electorate.weights[:3]
         assert mean == pytest.approx(float(np.average(per_voter[:3], weights=weights)))
 
+    def test_all_zero_margins_are_all_nan(self, small_electorate):
+        tied = small_electorate.with_deltas(
+            np.repeat(small_electorate.deltas[:, :1], 2, axis=1)
+        )
+        per_voter = LinearGaussianPerception(noise_sd=500.0).analytic_ranking_accuracy(
+            tied
+        )
+        assert per_voter.dtype == np.float64
+        assert np.isnan(per_voter).all()
+
     def test_noiseless_is_step(self, small_electorate):
         exact = PERFECT_PERCEPTION.analytic_ranking_accuracy(small_electorate)
         np.testing.assert_array_equal(exact[:3], [1.0, 1.0, 1.0])
@@ -103,6 +114,27 @@ class TestRankingAccuracy:
 
         with pytest.raises(ValueError, match="n_draws"):
             ranking_accuracy(OpaqueModel(), small_electorate)
+
+    def test_opaque_model_rejects_three_policies(self, small_electorate, rng):
+        electorate = Electorate(
+            deltas=np.column_stack(
+                (small_electorate.deltas, np.zeros(small_electorate.n_voters))
+            ),
+            weights=small_electorate.weights,
+            base_income=small_electorate.base_income,
+            hh_adults=small_electorate.hh_adults,
+            policy_labels=("Policy A", "Policy B", "Policy C"),
+            source="TEST three-policy electorate",
+        )
+
+        class OpaqueModel:
+            def perceive(self, electorate, rng):
+                return electorate.deltas
+
+        with pytest.raises(
+            ValueError, match=r"^ranking accuracy is defined for two policies$"
+        ):
+            ranking_accuracy(OpaqueModel(), electorate, rng=rng, n_draws=1)
 
 
 class TestGroupedPerception:

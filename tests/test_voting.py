@@ -80,6 +80,42 @@ class TestInstantRunoff:
         # Shares report the first round, before transfers.
         assert tally.shares[2] == pytest.approx(0.2)
 
+    def test_elimination_tie_eliminates_lowest_policy_index(self):
+        # Policies 0 and 1 each start with weight 2, behind policy 2's weight
+        # 3. Eliminating policy 0 transfers its weight to policy 1, which wins.
+        perceived = np.array(
+            [
+                [3.0, 2.0, 1.0],
+                [1.0, 3.0, 2.0],
+                [2.0, 1.0, 3.0],
+                [2.0, 1.0, 3.0],
+            ]
+        )
+        tally = InstantRunoff().tally(perceived, np.array([2.0, 2.0, 1.0, 2.0]))
+        assert tally.winner == 1
+        np.testing.assert_allclose(tally.shares, [2 / 7, 2 / 7, 3 / 7])
+
+    def test_indifferent_abstention_matches_plurality(self):
+        perceived = np.array([[0.0, 0.0], [10.0, 0.0], [0.0, 10.0]])
+        weights = np.array([5.0, 2.0, 3.0])
+
+        plurality = Plurality().tally(perceived, weights)
+        runoff = InstantRunoff(indifferent_abstain=True).tally(perceived, weights)
+
+        assert runoff.winner == plurality.winner == 1
+        assert runoff.turnout == pytest.approx(plurality.turnout)
+        np.testing.assert_allclose(runoff.shares, plurality.shares)
+
+    def test_default_indifference_force_votes_for_policy_zero(self):
+        perceived = np.array([[0.0, 0.0], [10.0, 0.0], [0.0, 10.0]])
+        weights = np.array([5.0, 2.0, 3.0])
+
+        tally = InstantRunoff(indifferent_abstain=False).tally(perceived, weights)
+
+        assert tally.winner == 0
+        assert tally.turnout == 1.0
+        np.testing.assert_allclose(tally.shares, [0.7, 0.3])
+
     def test_immediate_majority_short_circuits(self):
         perceived = np.array([[9.0, 1.0, 0.0]] * 3 + [[0.0, 9.0, 1.0]])
         tally = InstantRunoff().tally(perceived, np.ones(4))

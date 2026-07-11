@@ -21,7 +21,7 @@ import numpy as np
 from democrasim.electorate import Electorate, FloatArray
 from democrasim.perception import PerceptionModel
 from democrasim.voting import NO_WINNER, Plurality, Tally, VotingRule
-from democrasim.welfare import Isoelastic, WelfareMetric
+from democrasim.welfare import Isoelastic, WelfareMetric, _welfare_is_degenerate
 
 
 @dataclass(frozen=True)
@@ -52,11 +52,16 @@ class ElectionResult:
         winner: Winning policy index, or ``NO_WINNER`` (status quo).
         welfare_optimal: Policy index the welfare metric ranks highest.
         tracked: Whether the election selected the welfare-optimal policy.
-        regret: Welfare of the optimal policy minus realized welfare
-            (0 when tracked; welfare units of the chosen metric).
+        regret: Welfare of the best policy on the ballot minus realized
+            welfare, not distance from a broader social optimum. When no
+            ballots are cast, the status quo persists at welfare 0; this can
+            exceed every ballot policy's welfare and make regret negative.
         welfare_by_policy: The metric's value per policy on the full
             electorate.
         tally: The vote-level outcome (shares, turnout).
+        degenerate_welfare: Whether the top two welfare values fail the
+            relative-distinctness rule. ``tracked`` and ``regret`` are not
+            meaningful when this is true.
     """
 
     winner: int
@@ -65,6 +70,7 @@ class ElectionResult:
     regret: float
     welfare_by_policy: FloatArray
     tally: Tally
+    degenerate_welfare: bool = False
 
 
 def run_election(
@@ -83,6 +89,7 @@ def run_election(
     if welfare_by_policy is None:
         welfare_by_policy = spec.welfare.per_policy(electorate)
     optimal = int(np.argmax(welfare_by_policy))
+    degenerate_welfare = _welfare_is_degenerate(welfare_by_policy)
 
     voters = (
         electorate.sample(spec.n_voters, rng)
@@ -100,4 +107,5 @@ def run_election(
         regret=float(welfare_by_policy[optimal] - realized),
         welfare_by_policy=welfare_by_policy,
         tally=tally,
+        degenerate_welfare=degenerate_welfare,
     )

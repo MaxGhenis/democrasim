@@ -8,9 +8,11 @@ and instant-runoff exist as the comparison surface for mechanism questions.
 Conventions:
 
 - Perceived impacts are relative to current law, so 0 is the status quo.
-- Exact ties are resolved toward the lowest policy index, deterministically.
-  Under any perception model with continuous noise, ties have probability
-  zero; the convention only matters in noiseless edge cases.
+- Exact preference and winner ties are resolved toward the lowest policy
+  index, deterministically. Instant-runoff elimination ties instead eliminate
+  the lowest policy index. Under any perception model with continuous noise,
+  ties have probability zero; the convention only matters in noiseless edge
+  cases.
 - Under plurality, a voter who perceives an exact tie between their best
   options abstains (strict ``>`` on the gap). This makes "no stake, no noise,
   no vote" the default rather than silently breaking ties toward one policy.
@@ -109,29 +111,56 @@ class Approval:
 class InstantRunoff:
     """Full ranking by perceived impact; eliminate the weakest until majority.
 
-    Every voter ranks all policies (no abstention). With two policies this
-    reduces to plurality without abstention. Elimination ties break toward
-    keeping the lowest index.
+    With two policies, instant runoff coincides with unthresholded plurality
+    only in the absence of exact indifference. By default, a ballot whose
+    perceived values are all equal force-votes for policy 0, preserving the
+    historical behavior. Elimination ties eliminate the lowest policy index.
+
+    Args:
+        indifferent_abstain: Exclude ballots whose perceived values are all
+            exactly equal from every round and from turnout. The default
+            ``False`` retains force-voting for policy 0.
     """
 
+    indifferent_abstain: bool = False
+
     def tally(self, perceived: FloatArray, weights: FloatArray) -> Tally:
-        n, p = perceived.shape
+        _, p = perceived.shape
         # rankings[i] = policy indices from most to least preferred.
         rankings = np.argsort(-perceived, axis=1, kind="stable")
         total_mass = weights.sum()
+        if self.indifferent_abstain:
+            participating = ~np.all(perceived == perceived[:, :1], axis=1)
+            rankings = rankings[participating]
+            ballot_weights = weights[participating]
+        else:
+            ballot_weights = weights
+        participating_mass = ballot_weights.sum()
+        if participating_mass <= 0:
+            return Tally(
+                winner=NO_WINNER,
+                shares=np.zeros(p, dtype=np.float64),
+                turnout=0.0,
+            )
+
         alive = np.ones(p, dtype=bool)
         first_round_shares: FloatArray | None = None
 
         while True:
             # Each ballot counts for its highest-ranked live policy.
-            live_mask = alive[rankings]  # (n, p) — which ranked entries are live
+            # (n_ballots, p) — which ranked entries are live.
+            live_mask = alive[rankings]
             top_pos = np.argmax(live_mask, axis=1)
-            top_choice = rankings[np.arange(n), top_pos]
-            counts = np.bincount(top_choice, weights=weights, minlength=p)
+            top_choice = rankings[np.arange(len(rankings)), top_pos]
+            counts = np.bincount(top_choice, weights=ballot_weights, minlength=p)
             if first_round_shares is None:
                 first_round_shares = counts / total_mass
-            if counts.max() > total_mass / 2 or alive.sum() <= 2:
+            if counts.max() > participating_mass / 2 or alive.sum() <= 2:
                 winner = int(np.argmax(np.where(alive, counts, -np.inf)))
-                return Tally(winner=winner, shares=first_round_shares, turnout=1.0)
+                return Tally(
+                    winner=winner,
+                    shares=first_round_shares,
+                    turnout=float(participating_mass / total_mass),
+                )
             live_counts = np.where(alive, counts, np.inf)
             alive[int(np.argmin(live_counts))] = False
