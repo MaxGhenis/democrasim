@@ -73,8 +73,9 @@ and η = 2.5 — at η = 1 Policy A dominates (−$169.29 vs −$379.06 per
 household), at η = 2.5 Policy B does, by all of $2.88 (−$699.62 vs
 −$696.74). Split an all-informed, all-sociotropic electorate between
 those two lenses and the outcome follows the majority lens; grade it
-and every composition is simultaneously "tracked" under one welfare
-function and "failed" under the other
+and every majority composition is simultaneously "tracked" under one
+welfare function and "failed" under the other, while the 50/50 split is
+a coin flip under both
 ([results/heterogeneous_summary.json](results/heterogeneous_summary.json)).
 Perception surveys cannot close this gap; it is value pluralism, not
 information.
@@ -111,7 +112,7 @@ Three features:
    set is *empty*: proposing a program wins the noisy selfish margin
    until the opponent undercuts and takes the sociotropic bloc, which
    restores the incentive to propose — best responses chase each other,
-   with proposals reaching the full program inside the cycle. The gaps
+   with proposals reaching up to the full program inside the cycle. The gaps
    in the figure are that regime, reported as dynamics rather than
    equilibria.
 3. **The bloc degrades gracefully.** Sociotropic voters who misread the

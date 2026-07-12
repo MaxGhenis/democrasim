@@ -94,11 +94,11 @@ Three regularities:
    σ=$30,000. Under fixed platforms, moderate noise rescued welfare
    tracking; with endogenous platforms the same noise is what lets
    welfare-negative programs through. Whether misperception helps
-   depends on who sets the agenda. The selfish weight barely matters:
-   0.5 behaves almost like 1.0, because own stakes ($1,133 and $4,655
-   gross) dwarf the societal values (−$169 and −$379 of EDE per
-   household at full intensity) — only near-total societal weight
-   changes candidate behavior.
+   depends on who sets the agenda. Halving the selfish weight changes
+   little (enacted α 0.11 versus 0.19 at σ=$1,000, converging by
+   $30,000): own stakes ($1,133 and $4,655 gross) dwarf the societal
+   values (−$169 and −$379 of EDE per household at full intensity), so
+   only near-total societal weight changes candidate behavior.
 3. **Electoral competition prices constituency breadth — and noise
    erodes the price.** The CTC program's gross winners are a fifth of
    adults; the rate cap's are 3%. At σ=$1,000 that breadth gap keeps

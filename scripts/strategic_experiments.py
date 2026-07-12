@@ -68,21 +68,27 @@ def candidate_households(gross: d.Electorate) -> dict:
     row_2 = int(winners_b[np.argmin(np.abs(income[winners_b] - winner_median))])
     assert gross.deltas[row_1, 0] > 0, "candidate 1 must gain from Policy A"
     assert gross.deltas[row_2, 1] > 0, "candidate 2 must gain from Policy B"
+
+    def record(row: int) -> dict:
+        return {
+            "row": row,
+            "income": round(float(income[row])),
+            "children": int(kids[row]),
+            "hh_adults": int(gross.hh_adults[row]),
+            "gross_a": round(float(gross.deltas[row, 0])),
+            "gross_b": round(float(gross.deltas[row, 1])),
+        }
+
+    # The rejected proxy, kept as evidence: the childless household at the
+    # 95th income percentile sits below the capped brackets and would LOSE
+    # from Policy B once financed.
+    childless = np.flatnonzero(kids == 0)
+    p95 = d.weighted_quantile(income[childless], gross.weights[childless], [0.95])[0]
+    proxy = int(childless[np.argmin(np.abs(income[childless] - p95))])
     return {
-        "candidate_1": {
-            "row": row_1,
-            "income": round(float(income[row_1])),
-            "children": int(kids[row_1]),
-            "gross_a": round(float(gross.deltas[row_1, 0])),
-            "gross_b": round(float(gross.deltas[row_1, 1])),
-        },
-        "candidate_2": {
-            "row": row_2,
-            "income": round(float(income[row_2])),
-            "children": int(kids[row_2]),
-            "gross_a": round(float(gross.deltas[row_2, 0])),
-            "gross_b": round(float(gross.deltas[row_2, 1])),
-        },
+        "candidate_1": record(row_1),
+        "candidate_2": record(row_2),
+        "rejected_childless_p95_proxy": record(proxy),
     }
 
 

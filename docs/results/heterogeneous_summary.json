@@ -12,6 +12,7 @@
       "row": 100807,
       "income": 109693,
       "children": 3,
+      "hh_adults": 2,
       "gross_a": 1133,
       "gross_b": 0
     },
@@ -19,8 +20,17 @@
       "row": 39882,
       "income": 578540,
       "children": 0,
+      "hh_adults": 2,
       "gross_a": 0,
       "gross_b": 4655
+    },
+    "rejected_childless_p95_proxy": {
+      "row": 78913,
+      "income": 385413,
+      "children": 0,
+      "hh_adults": 2,
+      "gross_a": 0,
+      "gross_b": 0
     }
   },
   "knife_edge_selfish_weight_threshold": 0.9623,
