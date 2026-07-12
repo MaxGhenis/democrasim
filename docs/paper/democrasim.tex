@@ -180,9 +180,9 @@ p_i(\sigma, b) \;=\; \Phi\!\left(\frac{m_i - (b_B - b_A)}{\sigma\sqrt{2}}\right)
 while at \(\sigma = 0\) the vote is deterministic: \(A\) if the shifted
 margin is positive, \(B\) if negative, abstention if exactly zero.
 The implementation also supports multiplicative attenuation of
-\(m_i\), fixed to 1 throughout this paper.
-so an election of \(n\) voters sampled with probability proportional to
-weight reduces to a multinomial over (\(A\), \(B\), abstain) with
+\(m_i\), fixed to 1 throughout this paper. An election of \(n\) voters
+sampled with probability proportional to weight then reduces to a
+multinomial over (\(A\), \(B\), abstain) with
 population-weighted mean probabilities \((\bar p_A, \bar p_B, \bar p_0)\).
 With \(g = \bar p_A - \bar p_B\), the probability that \(A\) wins is
 \(\Phi\!\big(ng / \sqrt{n(\bar p_A + \bar p_B - g^2)}\big)\) by the normal
@@ -214,7 +214,7 @@ the engine's own weighted aggregates (worst relative discrepancy
 depend on --- most fragilely, the sign of the cost gap --- so a future data
 rebuild cannot silently invert them.
 
-\section{Results}
+\section{Fixed platforms: elections as graders}\label{sec:fixed}
 
 \subsection{Measured stakes are two-cliffed}\label{sec:stakes}
 
@@ -363,11 +363,13 @@ absolute margin) is the jury theorem, tracking from accuracy 0.507 at this
 second moments but its shape: the coexistence of a nearly indifferent
 majority with a concentrated high-stakes minority.
 
-\section{Endogenous platforms}\label{sec:strategic}
+\section{Endogenous platforms: elections as selectors}\label{sec:strategic}
 
-The results so far grade elections against two given policies. This
-section makes the platforms choices and asks what electoral competition
-enacts.
+Everything so far grades elections against two given policies. This
+section changes the closure, not the primitives: the same electorate,
+the same measured incidence vectors, the same financing and perception
+machinery --- but the platforms become choices, and the question becomes
+what electoral competition lets through.
 
 \paragraph{The position game.} A platform is a pair of intensities
 \((\alpha, \beta) \in [0,1]^2\) on the two measured incidence vectors:
