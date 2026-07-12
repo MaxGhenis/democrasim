@@ -13,12 +13,13 @@
 \newcommand{\pkg}[1]{\texttt{#1}}
 
 \title{Elections on measured stakes:\\
-plurality welfare tracking with microsimulated household impacts}
+welfare tracking and platform competition\\
+with microsimulated household impacts}
 \author{Max Ghenis\thanks{max@maxghenis.com. Code, data artifact, and every
 number's regeneration script: \url{https://github.com/MaxGhenis/democrasim}.
 The author co-founded PolicyEngine, whose open models and data this
 personal project uses.}}
-\date{July 11, 2026}
+\date{July 12, 2026}
 
 \begin{document}
 \maketitle
@@ -48,9 +49,24 @@ electorate-size statements that collapse toward 0.5 accuracy as \(n\)
 grows, while the expected-vote-share crossing behind the failure ceiling
 does not move with \(n\). And shared misperception of
 \(\approx\$221\) per voter per year flips elections that \$1{,}000 of
-independent noise cannot move. The mechanisms are classical; the
-contribution is dollar-denominated calibration on measured microdata, a
-reusable open-source harness, and a direct path to replacing the perception
+independent noise cannot move. Making the platforms choices reverses the
+information verdict: when two candidates --- households from the data,
+each valuing their own stake and society's equally-distributed-equivalent
+income change on one dollar scale --- pick positions in the space the
+measured incidence vectors span, perfect information becomes an
+undercutting force that drives every pure Nash equilibrium to the status
+quo, the welfare optimum available, while noise lets both self-serving
+programs escalate to full intensity and erodes the electoral advantage of
+the broad-constituency program over the narrow one. Giving voters the
+same mixed motives restores order cheaply: 3.8\% of utility weight on
+society cures the knife-edge, a 10\% informed-sociotropic minority
+disciplines purely selfish candidates back to the status quo at every
+noise level (through a cycling regime with no pure equilibrium at
+2--5\%), and the residual distortion is value pluralism --- fully
+informed sociotropic voters split when their inequality aversions
+disagree. The mechanisms are classical; the contribution is
+dollar-denominated calibration on measured microdata, a reusable
+open-source harness, and a direct path to replacing the perception
 assumption with survey estimates.
 \end{abstract}
 
@@ -86,22 +102,40 @@ do not (about \$221 per voter per year), and how many dollars of stake the
 decisive voting bloc holds at perfect information (\$4.10 per adult per
 year, net of financing).
 
-Five results follow. First, measured stakes are nothing like the
-homogeneous or Gaussian stakes of standard toys: 76\% of adults have
-approximately \$0 at stake gross of financing, while a fifth hold stakes
-above \$500 (Section~\ref{sec:stakes}). Second, welfare tracking is
-non-monotone in perception accuracy, and its failure at perfect information
-is a knife-edge with a precise anatomy: the outcome becomes
-\emph{welfare-independent}, set by the sign of the residual cost gap
-between the two policies (Section~\ref{sec:knife}). Third, every tracking
-threshold is an electorate-size statement; a closed form places the Monte
-Carlo results on the full ladder from 101 voters to the large-population
-limit (Section~\ref{sec:n}). Fourth, elections in this environment are
-robust to large independent misperception and fragile to small shared
-misperception (Section~\ref{sec:bias}). Fifth, moment-matched Gaussian
-comparators --- even preserving impact--income covariance --- reproduce none
-of this structure, so calibrating stake \emph{shape} matters more than
-matching moments (Section~\ref{sec:toys}).
+Five fixed-platform results come first. First, measured stakes are
+nothing like the homogeneous or Gaussian stakes of standard toys: 76\% of
+adults have approximately \$0 at stake gross of financing, while a fifth
+hold stakes above \$500 (Section~\ref{sec:stakes}). Second, welfare
+tracking is non-monotone in perception accuracy, and its failure at
+perfect information is a knife-edge with a precise anatomy: the outcome
+becomes \emph{welfare-independent}, set by the sign of the residual cost
+gap between the two policies (Section~\ref{sec:knife}). Third, every
+tracking threshold is an electorate-size statement; a closed form places
+the Monte Carlo results on the full ladder from 101 voters to the
+large-population limit (Section~\ref{sec:n}). Fourth, elections in this
+environment are robust to large independent misperception and fragile to
+small shared misperception (Section~\ref{sec:bias}). Fifth,
+moment-matched Gaussian comparators --- even preserving impact--income
+covariance --- reproduce none of this structure, so calibrating stake
+\emph{shape} matters more than matching moments (Section~\ref{sec:toys}).
+
+Two further layers then make behavior endogenous, on both sides of the
+ballot. Platforms become choices: two policy-motivated candidates
+\citep{wittman1983, calvert1985} --- households drawn from the data, in
+the citizen-candidate spirit \citep{osborne1996, besley1997} --- pick
+positions in the two-dimensional space the measured incidence vectors
+span, and every pure Nash equilibrium is computed exactly
+(Section~\ref{sec:strategic}). And voters get the same utility family
+the candidates carry: a selfish weight on their own perceived stake and
+a societal weight on the policy's equally-distributed-equivalent income
+change \citep{atkinson1970}, the sociotropic motive of
+\citet{kinder1981} and the altruistic-voting calculus of
+\citet{edlin2007} in dollar form, with mixtures of types heterogeneous
+in weights, inequality aversion, and information quality
+(Section~\ref{sec:preferences}). The two layers interact: the
+information conditions under which elections grade fixed policies well
+are close to the opposite of those under which they discipline the
+policies candidates offer.
 
 The exercise is a thought experiment about one mechanism: self-interested
 voting on misperceived, engine-computed household impacts. It is not
@@ -328,20 +362,262 @@ absolute margin) is the jury theorem, tracking from accuracy 0.507 at this
 second moments but its shape: the coexistence of a nearly indifferent
 majority with a concentrated high-stakes minority.
 
+\section{Endogenous platforms}\label{sec:strategic}
+
+The results so far grade elections against two given policies. This
+section makes the platforms choices and asks what electoral competition
+enacts.
+
+\paragraph{The position game.} A platform is a pair of intensities
+\((\alpha, \beta) \in [0,1]^2\) on the two measured incidence vectors:
+\(\alpha\) scales the credit increment (\(\alpha = 1\) is the full
+\$2{,}200\(\to\)\$3{,}200 change), \(\beta\) scales the rate-cap depth.
+Positions produce gross household deltas \(\alpha\,\delta_{iA} +
+\beta\,\delta_{iB}\), financed per capita; because the levy is linear in
+the deltas, \emph{net} stakes are exactly linear in \((\alpha, \beta)\),
+so the whole space runs on the two committed impact columns and the
+status quo \((0,0)\) is a position. Within-family linearity is itself
+measured, not assumed: two additional engine runs at the midpoint of
+each family price it. The rate axis is linear to 0.13\% of totals
+(99.95\% of households within \$1); the credit axis carries real
+phase-in convexity --- 5.0\% of totals, 96\% of households within \$1,
+mean absolute error \$9 --- and the grid stays inside the validated
+range.
+
+\paragraph{Candidates.} Each candidate is a household from the data with
+an objective over enacted positions, in dollars per year:
+\begin{equation}
+U_c(\alpha, \beta) \;=\; s_c \cdot \Delta_c(\alpha, \beta)
+\;+\; (1 - s_c) \cdot E(\alpha, \beta),
+\label{eq:candidate}
+\end{equation}
+where \(\Delta_c\) is the candidate's own household net delta, \(E\) is
+the position's change in equally-distributed-equivalent (EDE) household
+income under the candidate's inequality aversion
+\citep{atkinson1970}, and \(s_c\) is the selfish weight. The EDE is an
+increasing transform of the social welfare function, so it ranks
+positions identically while being denominated in dollars --- own stakes
+and societal value mix with no normalization, and \(s_c = 0.5\) trades a
+dollar of the candidate's own for a dollar of society-wide EDE income
+per household. An optional office rent adds a fixed dollar win bonus.
+Expected utility is \(P(\text{win}) \cdot U_c(\text{own position}) +
+(1 - P(\text{win})) \cdot U_c(\text{opponent's})\), with \(P(\text{win})\)
+from the same probit-and-normal-approximation machinery as
+equation~\eqref{eq:probit} at 10{,}001 voters. For self-interested
+voters the win probability depends only on the position
+\emph{difference}, so one \((2G{-}1)^2\) table prices all \(G^4\)
+profile comparisons on the \(21 \times 21\) grid and exhaustive
+pure-Nash enumeration is exact and cheap. The headline candidates are
+selected by measured stake and asserted against the committed deltas: a
+two-adult, three-child household at the median income of such households
+(\$109{,}693; gross credit stake \(+\$1{,}133\)), and the household at
+the weighted median income of the rate cap's gross winners (\$578{,}540,
+childless; gross stake \(+\$4{,}655\)). An income-percentile proxy fails
+at this step --- the childless 95th percentile sits below the capped
+brackets and would \emph{lose} from the rate cap.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Candidates & \(\sigma = \$0\) & \$200 & \$1{,}000 & \$10{,}000 & \$30{,}000 \\
+\midrule
+Office-seekers (rent only) & SQ & SQ & SQ & SQ & SQ \\
+Both societal (\(\eta = 1\)) & SQ & SQ & SQ & SQ & SQ \\
+Both selfish & SQ & .01/0 & .19/.05 & .65/.25 & .55/.45 \\
+\quad (proposals) & --- & (.05/0) & (.35/.10) & (1.0/.70) & (1.0/1.0) \\
+\bottomrule
+\end{tabular}
+\caption{Mean enacted position across pure Nash equilibria, written
+\(\alpha/\beta\) (credit and rate-cap intensity); SQ is the status quo
+\((0,0)\). Parenthesized rows give the two candidates' proposals from
+best-response dynamics. The welfare-optimal position under \(\eta = 1\)
+is the status quo: both financed endpoint policies score below it.}
+\label{tab:strategic}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.86\linewidth]{figures/strategic_positions.png}
+\caption{Equilibrium credit intensity against perception noise, by the
+candidates' selfish weight. Solid lines are win-probability-weighted
+enacted intensity; dashed lines are the credit candidate's proposal.
+Perfect information pins every equilibrium to the status quo;
+noise lets self-serving programs through.}
+\label{fig:strategic}
+\end{figure}
+
+Three regularities organize Table~\ref{tab:strategic} and
+Figure~\ref{fig:strategic}. First, \textbf{perfect information
+disciplines platforms to the status quo}. At \(\sigma \le \$10\) every
+equilibrium enacts \((0,0)\) whatever the candidates want: the same
+trivial-stakes mass that created the fixed-platform knife-edge now
+punishes any proposer of a levy, so any program hands the opponent a
+cheaper-platform win and competition converges on proposing nothing.
+Under this welfare metric that is the optimum. Perfect information
+produces the welfare-best outcome through competition --- inverting
+Section~\ref{sec:knife}, where the same information regime made the
+fixed-platform outcome welfare-independent. The inversion is the paper's
+sharpest comparative static: whether accurate voters help depends on
+whether the platforms are given or chosen.
+
+Second, \textbf{noise relaxes the discipline, and self-interest fills
+the gap}. As \(\sigma\) grows both candidates escalate their own
+programs --- the credit candidate from a doomed \(\alpha = 0.05\)
+proposal at \(\sigma = \$50\) (enacted: still zero) to the full program
+by \(\sigma = \$10{,}000\); the rate-cap candidate to the full cap by
+\(\sigma = \$30{,}000\). Halving the selfish weight changes little
+(enacted \(\alpha\) 0.11 versus 0.19 at \(\sigma = \$1{,}000\),
+converging by \$30{,}000): candidates' own stakes are thousands of
+dollars while full-intensity societal values are \(-\$169\) and
+\(-\$379\) of EDE per household, so only near-total societal weight
+changes candidate behavior. Under fixed platforms, moderate noise
+rescued welfare tracking; with endogenous platforms the same noise is
+what lets welfare-negative programs through. Whether misperception helps
+depends on who sets the agenda.
+
+Third, \textbf{competition prices constituency breadth, and noise erodes
+the price}. The credit program's gross winners are a fifth of adults;
+the rate cap's are 3\%. At \(\sigma = \$1{,}000\) that breadth gap keeps
+enacted intensity four-to-one in the credit's favor; by
+\(\sigma = \$30{,}000\) both candidates run their full programs and the
+election is a near-coin flip (win probability 0.545 versus 0.455).
+Enough noise erases the electorate's ability to distinguish a broad
+program from a narrow one --- the breadth filter is a head-count,
+indifferent to the welfare metric, and it only operates while voters can
+see their stakes.
+
+\section{Heterogeneous preferences}\label{sec:preferences}
+
+Baseline voters maximize perceived own income. This section gives them
+the candidates' utility family: voter \(i\) of type \(t\) values policy
+\(j\) at \(s_t \hat\delta_{ij} + (1 - s_t)\hat E_{tj}\), where
+\(\hat\delta_{ij}\) is the perceived own stake of
+equation~\eqref{eq:probit}'s model, \(\hat E_{tj}\) is the policy's EDE
+change under the type's inequality aversion \(\eta_t\) perceived with
+type-specific noise and bias, and \(s_t\) is the type's selfish weight.
+Both terms are dollars. A population is a mixture of types ---
+heterogeneous in \(s\), \(\eta\), and information quality --- and the
+mixture is exact in the analytic machinery (types enter as weights, not
+draws). Every voter margin remains normal, so the closed forms of
+Section~\ref{sec:model} extend, and the equilibrium tables of
+Section~\ref{sec:strategic} take arbitrary mixtures.
+
+\paragraph{A sliver of societal motive cures the knife-edge.} The
+knife-edge ruled because the trivial-stakes mass voted a \(-\$4.10\)
+levy margin. The societal signal is fifty times larger: the two
+policies' EDE values differ by \$209.77 per household
+(\(-\$169.29\) versus \(-\$379.06\), \(\eta = 1\)). At \(\sigma = 0\),
+tracking flips from 0 to 1 as the homogeneous selfish weight falls
+through \(s^* = 0.9623\): voters who place under 4\% of their utility
+weight on society still vote as if they could see the welfare ranking.
+Higher weights buy robustness at the noisy end instead --- at
+\(\sigma = \$30{,}000\), where baseline tracking has decayed to 0.546,
+tracking is 0.694 at \(s = 0.5\), 0.902 at \(s = 0.25\), and 1.0 for
+sociotropic voters (Figure~\ref{fig:mixed}). The two informational
+channels are not symmetric: own-stake noise cancels only through the
+plurality aggregate, while an accurately perceived societal signal is
+common to every voter who weights it.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.86\linewidth]{figures/mixed_motive_tracking.png}
+\caption{Analytic tracking against own-stake noise by the voters'
+selfish weight (informed societal component, 10{,}001 voters). Societal
+motives substitute for accurate self-perception.}
+\label{fig:mixed}
+\end{figure}
+
+\paragraph{Value pluralism is its own distortion channel.} Sociotropic
+voting removes the misperception distortions and introduces one that no
+perception survey can close: fully informed voters disagree because they
+hold different welfare functions. On these policies the EDE ranking
+flips between \(\eta = 2\) and \(\eta = 2.5\) --- at 2.5 the rate cap
+edges the credit by all of \$2.88 per household (\(-\$696.74\) versus
+\(-\$699.62\)). Split an all-informed sociotropic electorate between
+\(\eta = 1\) and \(\eta = 2.5\) types and the outcome follows the
+majority lens; graded against either welfare function, every composition
+is simultaneously ``tracked'' under one and ``failed'' under the other.
+
+\paragraph{A sociotropic minority disciplines candidates.} The
+escalation of Section~\ref{sec:strategic} assumed every voter is a noisy
+self-interested one. Mixing in a share \(q\) of informed sociotropic
+voters (\(s = 0\), \(\eta = 1\)) against the same purely selfish
+candidates dismantles it (Table~\ref{tab:discipline},
+Figure~\ref{fig:discipline}). At \(q = 0.10\) every noise level has
+pure equilibria again and all of them enact the status quo: the bloc
+votes deterministically against whichever candidate proposes the more
+welfare-negative program, and a tenth of the electorate outweighs the
+selfish margin any program can buy among its beneficiaries. The
+transition is not smooth: at \(q = 0.02\)--\(0.05\) and high \(\sigma\)
+the pure-equilibrium set is \emph{empty} --- proposing a program wins
+the noisy selfish margin until the opponent undercuts and takes the
+sociotropic bloc, which restores the incentive to propose, and best
+responses cycle with proposals reaching full intensity inside the
+cycle. The bloc also degrades gracefully: sociotropic voters who misread
+the societal value with \$500 of noise per household (against a signal
+peaking near \$380) still cut enacted intensity at 30\% share from 0.65
+to 0.11, while an electorate that is uniformly \emph{half} selfish ---
+no informed bloc at all --- cuts it only from 0.63 to 0.44 on a
+matched grid. A small bloc that votes the societal signal
+deterministically disciplines far more than diffuse partial altruism,
+which merely shrinks every voter's selfish margin.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Sociotropic share \(q\) & \(\sigma = \$1{,}000\) & \$10{,}000 & \$30{,}000 \\
+\midrule
+0 (baseline) & 0.19 & 0.65 & 0.55 \\
+0.02 & cycling & cycling & cycling \\
+0.05 & 0.00 & cycling & cycling \\
+0.10--0.50 & 0.00 & 0.00 & 0.00 \\
+\bottomrule
+\end{tabular}
+\caption{Mean enacted credit intensity across pure Nash equilibria,
+purely selfish candidates. ``Cycling'' marks empty pure-equilibrium
+sets, where best-response dynamics orbit instead; 0.00 is zero to
+numerical precision.}
+\label{tab:discipline}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=.86\linewidth]{figures/strategic_discipline.png}
+\caption{Enacted credit intensity against the informed-sociotropic voter
+share, by own-stake noise. Gaps are the cycling regime of
+Table~\ref{tab:discipline}.}
+\label{fig:discipline}
+\end{figure}
+
 \section{Robustness and limitations}\label{sec:limits}
 
 The welfare ranking is stable across \(\eta \in \{0.5, 1, 2\}\) and under
 per-capita and square-root equivalence scales, but flips to Policy B at
-\(\eta \ge 3\), where the \$1{,}000 income floor's censoring of the
-poorest households' levies dominates; the ranking is a modeling choice and
-is reported as such. Both financing rules hand the no-stakes bloc its
-signed sliver; financing choices that zero it, or deficit financing that
-hides it, restore monotone tracking. Voters here are exclusively
-self-interested, static, and annual; candidates do not reposition
-(an endogenous-candidate extension is tracked in the repository). Errors
-are independent across voters --- including adults in the same household ---
-and across policies; household-correlated error is not simulated here and could change the
-levy bloc's effective behavior.
+\(\eta \ge 2.5\), where the \$1{,}000 income floor's censoring of the
+poorest households' levies dominates; the ranking is a modeling choice,
+reported as such, and Section~\ref{sec:preferences} converts the
+sensitivity into a mechanism. Both financing rules hand the no-stakes
+bloc its signed sliver; financing choices that zero it, or deficit
+financing that hides it, restore monotone tracking. Errors are
+independent across voters --- including adults in the same household ---
+and across policies; household-correlated error is not simulated here
+and could change the levy bloc's effective behavior.
+
+The endogenous layers carry their own scope. The position game is two
+candidates, one shot, pure strategies on a grid, in the
+two-dimensional space the measured incidence vectors span; mixed
+strategies in the cycling regime are not computed (best-response
+dynamics are reported instead), and entry, primaries, dynamics, and
+commitment problems are out of scope. Voter types mix independently of
+stakes and demographics; the societal signal a voter perceives is the
+EDE change of the electorate actually voting; and the societal noise,
+bias, and \(\eta\) distributions are labeled assumptions with nothing
+measured behind them --- the layer exists so that survey estimates of
+sociotropic perception can drop in beside the own-stake ones.
 
 The binding limitation is that perception is assumed. The linear-Gaussian
 family is exactly what a survey regression of perceived on true impacts
@@ -361,16 +637,41 @@ almost perfectly across two orders of magnitude of misperception, fail on
 a welfare-irrelevant residual at perfect information unless the
 trivial-stakes majority goes silent, scale their thresholds with
 electorate size, and trade a thousand dollars of noise tolerance for a
-two-hundred-dollar bias vulnerability. The mechanisms are old; the
-denominations are new. Whether real electorates sit on the tracking side
-of these numbers is now a measurement question.
+two-hundred-dollar bias vulnerability. Making the platforms choices
+flips the verdict on information: perfect information disciplines
+competing candidates to the status quo --- here the welfare optimum ---
+while the same noise that rescued fixed-platform tracking is what lets
+self-serving programs through, eroding even the electoral advantage of
+broad constituencies over narrow ones. And the cheapest repairs live in
+preferences, not information: a few percent of utility weight on society
+cures the knife-edge, and a tenth of the electorate voting an informed
+societal signal disciplines purely selfish candidates at any noise
+level, leaving value pluralism --- informed voters with different
+inequality aversions --- as the distortion no measurement closes. The
+mechanisms are old; the denominations are new. Whether real electorates
+sit on the tracking side of these numbers --- how accurately voters see
+their own stakes, how much weight they place on society's, and through
+which welfare lens --- is now a measurement question.
 
-\begin{thebibliography}{11}
+\begin{thebibliography}{17}
 \itemsep2pt
+
+\bibitem[Atkinson(1970)]{atkinson1970}
+Atkinson, A.~B. (1970). On the measurement of inequality. \emph{Journal
+of Economic Theory}, 2(3), 244--263.
 
 \bibitem[Bartels(2005)]{bartels2005}
 Bartels, L.~M. (2005). Homer gets a tax cut: Inequality and public policy
 in the American mind. \emph{Perspectives on Politics}, 3(1), 15--31.
+
+\bibitem[Besley and Coate(1997)]{besley1997}
+Besley, T., and Coate, S. (1997). An economic model of representative
+democracy. \emph{Quarterly Journal of Economics}, 112(1), 85--114.
+
+\bibitem[Calvert(1985)]{calvert1985}
+Calvert, R.~L. (1985). Robustness of the multidimensional voting model:
+Candidate motivations, uncertainty, and convergence. \emph{American
+Journal of Political Science}, 29(1), 69--95.
 
 \bibitem[Caplan(2007)]{caplan2007}
 Caplan, B. (2007). \emph{The Myth of the Rational Voter: Why Democracies
@@ -393,9 +694,19 @@ Chicago Press.
 \bibitem[Downs(1957)]{downs1957}
 Downs, A. (1957). \emph{An Economic Theory of Democracy}. Harper.
 
+\bibitem[Edlin et~al.(2007)]{edlin2007}
+Edlin, A., Gelman, A., and Kaplan, N. (2007). Voting as a rational
+choice: Why and how people vote to improve the well-being of others.
+\emph{Rationality and Society}, 19(3), 293--314.
+
 \bibitem[Feddersen and Pesendorfer(1996)]{feddersen1996}
 Feddersen, T., and Pesendorfer, W. (1996). The swing voter's curse.
 \emph{American Economic Review}, 86(3), 408--424.
+
+\bibitem[Kinder and Kiewiet(1981)]{kinder1981}
+Kinder, D.~R., and Kiewiet, D.~R. (1981). Sociotropic politics: The
+American case. \emph{British Journal of Political Science}, 11(2),
+129--161.
 
 \bibitem[Ladha(1992)]{ladha1992}
 Ladha, K.~K. (1992). The Condorcet jury theorem, free speech, and
@@ -407,6 +718,11 @@ Lindbeck, A., and Weibull, J.~W. (1987). Balanced-budget redistribution as
 the outcome of political competition. \emph{Public Choice}, 52(3),
 273--297.
 
+\bibitem[Osborne and Slivinski(1996)]{osborne1996}
+Osborne, M.~J., and Slivinski, A. (1996). A model of political
+competition with citizen-candidates. \emph{Quarterly Journal of
+Economics}, 111(1), 65--96.
+
 \bibitem[Page and Shapiro(1992)]{page1992}
 Page, B.~I., and Shapiro, R.~Y. (1992). \emph{The Rational Public: Fifty
 Years of Trends in Americans' Policy Preferences}. University of Chicago
@@ -415,6 +731,10 @@ Press.
 \bibitem[Stantcheva(2021)]{stantcheva2021}
 Stantcheva, S. (2021). Understanding tax policy: How do people reason?
 \emph{Quarterly Journal of Economics}, 136(4), 2309--2369.
+
+\bibitem[Wittman(1983)]{wittman1983}
+Wittman, D. (1983). Candidate motivation: A synthesis of alternative
+theories. \emph{American Political Science Review}, 77(1), 142--157.
 
 \end{thebibliography}
 

@@ -1,6 +1,6 @@
 # Submission metadata
 
-- Title: Elections on measured stakes: plurality welfare tracking with
+- Title: Elections on measured stakes: welfare tracking and platform competition with
   microsimulated household impacts
 - Author: Max Ghenis (max@maxghenis.com)
 - arXiv primary category: econ.GN (General Economics); cross-list
