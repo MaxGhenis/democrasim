@@ -366,6 +366,45 @@ def strategic_positions(frame: pd.DataFrame) -> plt.Figure:
         return fig
 
 
+def rules_comparison(frame: pd.DataFrame) -> plt.Figure:
+    """Welfare tracking vs noise per voting rule, three-option ballot.
+
+    Expects the rules_comparison frame (one row per rule × σ) with
+    ``p_tracked`` and Wilson bounds. σ = 0 is omitted by the log axis; the
+    results table carries it.
+    """
+    labels = {
+        "plurality": "plurality",
+        "approval": "approval",
+        "score_ballot_0_5": "score 0–5 (ballot-normalized)",
+        "score_stakes": "score (stakes-proportional)",
+        "star_0_5": "STAR 0–5",
+        "instant_runoff": "instant runoff",
+    }
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.2))
+        for j, (name, label) in enumerate(labels.items()):
+            sub = frame[(frame["rule"] == name) & (frame["sigma"] > 0)].sort_values(
+                "sigma"
+            )
+            if sub.empty:
+                continue
+            _tracking_band(ax, sub, sub["sigma"].to_numpy(), j % len(SERIES))
+            ax.plot(
+                sub["sigma"],
+                sub["p_tracked"],
+                color=SERIES[j % len(SERIES)],
+                label=label,
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel("perception noise σ, dollars per year (log scale; σ=0 omitted)")
+        ax.set_ylabel("share of elections enacting the\nwelfare-optimal option")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Voting rules on a ballot that includes the status quo")
+        ax.legend(loc="lower left", fontsize=8)
+        return fig
+
+
 def mixed_motive_tracking(frame: pd.DataFrame) -> plt.Figure:
     """Analytic tracking vs own-stake noise, by the voters' selfish weight.
 
@@ -450,6 +489,7 @@ __all__: Iterable[str] = [
     "margin_distribution",
     "n_sensitivity",
     "rule_comparison",
+    "rules_comparison",
     "save_figures",
     "strategic_positions",
 ]

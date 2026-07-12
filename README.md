@@ -90,7 +90,7 @@ print(electorate.policy_labels[result.winner], result.tracked)
 democrasim/
   electorate.py   # real households as arrays: impacts, weights, adults per household
   perception.py   # PerceptionModel: perceived = attenuation·true + bias + noise
-  voting.py       # Plurality (indifference abstains) / Approval / InstantRunoff
+  voting.py       # Plurality / Approval / Score / STAR / InstantRunoff (indifference abstains)
   welfare.py      # Utilitarian, Isoelastic(η) + dollar EDE; financing closes the budget
   preferences.py  # VoterType mixtures: own-stake and societal motives, one dollar scale
   election.py     # sample voters -> perceive -> vote -> grade against welfare

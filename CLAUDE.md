@@ -33,12 +33,13 @@ uv run python scripts/descriptives.py  # descriptive numbers behind findings §1
 uv run python scripts/make_notebook.py # re-execute docs/demo.ipynb
 uv run python scripts/strategic_experiments.py  # Nash equilibria behind docs/strategic.md
 uv run python scripts/heterogeneous_experiments.py  # mixed-motive voters behind docs/heterogeneity.md
+uv run python scripts/rules_experiments.py  # three-option rules comparison behind docs/rules.md
 uv sync --extra engine --group dev   # only to rebuild the measured dataset
 uv run democrasim build-data     # regenerate democrasim/data artifact
 ```
 
-Every number quoted in README.md, docs/findings.md, docs/strategic.md, or
-docs/heterogeneity.md must trace to a file in
+Every number quoted in README.md, docs/findings.md, docs/strategic.md,
+docs/heterogeneity.md, or docs/rules.md must trace to a file in
 docs/results/ produced by one of the commands above, and
 tests/test_findings_regression.py pins the artifact facts the findings rest
 on (most fragilely: the sign of the cost gap between the two policies). If a
@@ -50,7 +51,7 @@ rebuild trips those tests, the findings note must be re-derived, not patched.
 democrasim/
   electorate.py   # Electorate: numpy arrays (deltas, weights, hh_adults, ...)
   perception.py   # PerceptionModel protocol + LinearGaussianPerception
-  voting.py       # Plurality / Approval / InstantRunoff over perceived deltas
+  voting.py       # Plurality / Approval / Score / STAR / InstantRunoff over perceived dollars
   welfare.py      # Utilitarian / Isoelastic functionals + dollar EDE + financing
   preferences.py  # VoterType mixtures: selfish/societal motives on one dollar scale
   election.py     # one election: sample -> perceive -> vote -> compare to welfare

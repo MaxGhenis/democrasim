@@ -43,9 +43,11 @@ from democrasim.strategic import (
 from democrasim.toy import homogeneous_toy, moment_matched_toy
 from democrasim.voting import (
     NO_WINNER,
+    STAR,
     Approval,
     InstantRunoff,
     Plurality,
+    Score,
     Tally,
     VotingRule,
 )
@@ -62,6 +64,7 @@ __version__ = "0.2.0"
 __all__ = [
     "NO_WINNER",
     "PERFECT_PERCEPTION",
+    "STAR",
     "Approval",
     "Candidate",
     "ElectionResult",
@@ -76,6 +79,7 @@ __all__ = [
     "PerceptionModel",
     "Plurality",
     "PolicySpace",
+    "Score",
     "Tally",
     "Utilitarian",
     "VoterType",
