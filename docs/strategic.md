@@ -28,35 +28,50 @@ of households within $1, mean absolute error $9. The grid stays inside
 the validated range.
 
 **Candidates.** Each candidate is a household from the data with an
-objective over enacted positions:
-``selfish_weight · own household's net delta + (1 − selfish_weight) ·
-isoelastic welfare`` (components min–max normalized over the grid;
-dollars and welfare units are not commensurable, so the weight is the
-interpretable knob). An optional office rent adds a fixed win bonus.
-Expected utility is ``P(win)·U(own position) + (1−P(win))·U(opponent's)``.
-The headline candidates, selected deterministically from the data:
-Candidate 1 is a two-adult household with three children at the median
-income of child households ($109,693); Candidate 2 is a childless
-household at the 95th income percentile ($385,413).
+objective over enacted positions, in dollars per year:
+``selfish_weight · own household net delta + (1 − selfish_weight) ·
+societal dollar value``, where the societal value is the position's
+change in equally-distributed-equivalent (EDE) household income under
+the candidate's own inequality aversion. Both terms are dollars, so a
+candidate at weight 0.5 trades a dollar of their own for a dollar of
+society-wide EDE income per household — no normalization, and the same
+utility family the electorate can carry ([heterogeneity.md](heterogeneity.md)).
+An optional office rent adds a fixed dollar win bonus. Expected utility
+is ``P(win)·U(own position) + (1−P(win))·U(opponent's)``.
 
-**Election.** P(win) depends only on the difference of positions,
-through the same probit closed form as the fixed-platform model, at
-10,001 sampled voters. One (2G−1)² difference table prices all G⁴
-profile comparisons, so exact best-response matrices — and every pure
-Nash profile — cost about a second per configuration.
+The headline candidates are selected deterministically *by measured
+stake*, and the selection is asserted against the committed deltas:
+Candidate 1 is a two-adult household with three children at the median
+income of such households ($109,693; gross Policy-A stake +$1,133).
+Candidate 2 is the household at the weighted median income of Policy B's
+gross winners ($578,540, childless; gross Policy-B stake +$4,655) — an
+income-percentile proxy fails here, because the childless 95th
+percentile sits below the capped brackets and would *lose* from
+Policy B.
+
+**Election.** P(win) uses the same probit closed form as the
+fixed-platform model, at 10,001 sampled voters. For the baseline
+self-interested electorate it depends only on the difference of
+positions, so one (2G−1)² table prices all G⁴ profile comparisons and
+exact pure-Nash enumeration costs about a second per configuration; any
+mixture of voter types drops into the same tables
+([heterogeneity.md](heterogeneity.md)).
 
 ## Results
 
-| Candidates | σ = $0 | σ = $200 | σ = $1,000 | σ = $10,000 |
-|---|---|---|---|---|
-| Office-seekers (rent only) | converge on status quo | status quo | status quo | status quo |
-| Both societal (η=1) | status quo | status quo | status quo | status quo |
-| Selfish weight 0.5 or 1.0 | status quo | C1 proposes α=0.05, enacted ≈0.01 | C1 proposes α=0.25, enacted ≈0.07 | C1 proposes α=1.0, enacted ≈0.42 |
-
+Mean enacted position across equilibria, written α/β (Policy-A and
+Policy-B intensity), with candidate proposals from best-response
+dynamics in parentheses
 ([results/strategic_equilibria.csv](results/strategic_equilibria.csv);
 the welfare-optimal position under η=1 is the status quo, consistent
 with the fixed-platform finding that both financed endpoint policies
-score below it.)
+score below it):
+
+| Candidates | σ = $0 | σ = $200 | σ = $1,000 | σ = $10,000 | σ = $30,000 |
+|---|---|---|---|---|---|
+| Office-seekers (rent only) | status quo | status quo | status quo | status quo | status quo |
+| Both societal (η=1) | status quo | status quo | status quo | status quo | status quo |
+| Both selfish | status quo | .01/0 (.05/0) | .19/.05 (.35/.10) | .65/.25 (1.0/.70) | .55/.45 (1.0/1.0) |
 
 ![Equilibrium platform intensity vs noise](figures/strategic_positions.png)
 
@@ -72,37 +87,46 @@ Three regularities:
    welfare-best outcome through competition, inverting the
    fixed-platform result where it produced welfare-independence.
 2. **Noise relaxes the discipline, and self-interest fills the gap.**
-   As σ grows, the child-household candidate's equilibrium proposal
-   escalates from α=0.05 at σ=$200 to the full program at σ=$10,000,
-   with the enacted (win-probability-weighted) intensity reaching 0.47.
-   Under fixed platforms, moderate noise rescued welfare tracking; with
-   endogenous platforms the same noise is what lets welfare-negative
-   programs through. Whether misperception helps depends on who sets
-   the agenda.
-3. **Electoral competition filters by constituency breadth, not by
-   welfare.** Candidate 2 never proposes rate-cap intensity at any
-   noise level or selfish weight — a program whose gross winners are 3%
-   of households cannot survive competition even when its proposer is
-   purely selfish. The CTC program, with a fifth of adults as winners,
-   can. The filter is a head-count, indifferent to the welfare metric.
+   As σ grows, both candidates escalate their own programs — the
+   child-household candidate from a doomed α=0.05 proposal at σ=$50
+   (enacted: still zero) to the full CTC program by σ=$10,000, the
+   rate-cap candidate from β=0.05 at σ=$1,000 to the full cap by
+   σ=$30,000. Under fixed platforms, moderate noise rescued welfare
+   tracking; with endogenous platforms the same noise is what lets
+   welfare-negative programs through. Whether misperception helps
+   depends on who sets the agenda. The selfish weight barely matters:
+   0.5 behaves almost like 1.0, because own stakes ($1,133 and $4,655
+   gross) dwarf the societal values (−$169 and −$379 of EDE per
+   household at full intensity) — only near-total societal weight
+   changes candidate behavior.
+3. **Electoral competition prices constituency breadth — and noise
+   erodes the price.** The CTC program's gross winners are a fifth of
+   adults; the rate cap's are 3%. At σ=$1,000 that breadth gap keeps
+   enacted intensity 4-to-1 in Policy A's favor (0.19 vs 0.05). By
+   σ=$30,000 both candidates run their full programs and the election
+   is a near-coin flip (win probability 0.545 vs 0.455): enough noise
+   erases the electorate's ability to distinguish a broad program from
+   a narrow one. The breadth filter is a head-count, indifferent to the
+   welfare metric — and it only works when voters can see their stakes.
 
 ## Scope
 
 Two candidates, one shot, pure strategies on a grid, a shared 2D policy
-space, and objectives mixed on a normalized scale — all labeled choices,
-all cheap to vary. Mixed-strategy equilibria are not computed (at σ=0
-the game has large pure-equilibrium sets rather than none, so nothing
-here required them). The equilibrium multiplicity at low noise is
-tie-driven: losing positions with identical payoffs proliferate
-profiles; the *enacted* position is the invariant summary. Candidate
-behavior beyond this objective family — dynamics, entry, primaries,
-commitment problems — is out of scope, as is any claim about real
-candidates.
+space, and objectives in one dollar family — all labeled choices, all
+cheap to vary. Mixed-strategy equilibria are not computed (in the
+baseline sweep every configuration has a pure equilibrium; heterogeneous
+electorates can empty the pure set — [heterogeneity.md](heterogeneity.md)
+reports where, and best-response dynamics there). The equilibrium
+multiplicity at low noise is tie-driven: losing positions with identical
+payoffs proliferate profiles; the *enacted* position is the invariant
+summary. Candidate behavior beyond this objective family — dynamics,
+entry, primaries, commitment problems — is out of scope, as is any claim
+about real candidates.
 
 ## Reproduction
 
 ```bash
 uv run python scripts/strategic_experiments.py     # equilibria, office-seeker variant, figure
 uv run python scripts/validate_interpolation.py    # two engine runs (~16 min) + error report
-uv run pytest tests/test_strategic.py              # 13 behavioral tests
+uv run pytest tests/test_strategic.py              # behavioral tests, incl. voter-type tables
 ```

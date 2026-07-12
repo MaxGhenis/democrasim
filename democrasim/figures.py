@@ -366,6 +366,70 @@ def strategic_positions(frame: pd.DataFrame) -> plt.Figure:
         return fig
 
 
+def mixed_motive_tracking(frame: pd.DataFrame) -> plt.Figure:
+    """Analytic tracking vs own-stake noise, by the voters' selfish weight.
+
+    Expects a long frame with ``selfish_weight``, ``noise_sd`` and
+    ``p_tracked`` columns (informed societal component, σ_soc = 0). At most
+    six weights are drawn (one per palette hue) from the fixed display set;
+    probe weights such as 0.98 stay in the CSV. The fully sociotropic
+    series is constant at 1, so it draws as the wide translucent underlay.
+    """
+    display = [1.0, 0.9, 0.75, 0.5, 0.25, 0.0]
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        weights = [w for w in display if w in set(frame["selfish_weight"])]
+        for j, weight in enumerate(weights):
+            sub = frame[
+                (frame["selfish_weight"] == weight) & (frame["noise_sd"] > 0)
+            ].sort_values("noise_sd")
+            style = {"linewidth": 4.5, "alpha": 0.35} if weight == 0.0 else {}
+            ax.plot(
+                sub["noise_sd"],
+                sub["p_tracked"],
+                color=SERIES[j % len(SERIES)],
+                label=f"{weight:g}",
+                **style,
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel(
+            "own-stake perception noise σ, dollars per year (log scale; σ=0 omitted)"
+        )
+        ax.set_ylabel("P(welfare-optimal policy wins), analytic")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Societal motives substitute for accurate self-perception")
+        ax.legend(loc="lower center", ncols=3, title="voters' selfish weight")
+        return fig
+
+
+def strategic_discipline(frame: pd.DataFrame) -> plt.Figure:
+    """Equilibrium platform intensity vs the sociotropic voter share.
+
+    Expects the heterogeneous-electorate equilibrium frame: purely selfish
+    candidates against an electorate mixing noisy self-interested voters
+    with informed sociotropic ones, one series per own-stake noise level.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        sigmas = sorted(frame["sigma"].unique())
+        for j, sigma in enumerate(sigmas):
+            sub = frame[frame["sigma"] == sigma].sort_values("sociotropic_share")
+            ax.plot(
+                sub["sociotropic_share"],
+                sub["mean_enacted_alpha"],
+                color=SERIES[j % len(SERIES)],
+                marker="o",
+                markersize=4,
+                label=f"σ = ${sigma:,.0f}",
+            )
+        ax.set_xlabel("share of voters who are informed and sociotropic")
+        ax.set_ylabel("enacted Policy-A intensity α")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("A sociotropic minority restores platform discipline")
+        ax.legend(loc="upper right", title="own-stake noise")
+        return fig
+
+
 def save_figures(figures: dict[str, plt.Figure], directory: Path | str) -> list[Path]:
     """Write each figure as PNG into ``directory``; returns paths."""
     directory = Path(directory)

@@ -44,12 +44,15 @@ def provenance() -> dict:
 
 
 def candidate_households(gross: d.Electorate) -> dict:
-    """Deterministic candidate households, selected from the data.
+    """Deterministic candidate households whose measured stakes oppose.
 
     Candidate 1: a two-adult household with 2+ children at the median
-    income of such households (selfish stake favors Policy A intensities).
-    Candidate 2: a childless household at the 95th income percentile of
-    childless households (selfish stake favors Policy B intensities).
+    income of such households — a gross Policy A winner. Candidate 2: the
+    household at the weighted median income of Policy B's gross winners —
+    selection by measured stake, not by an income-percentile proxy (the
+    childless 95th percentile turns out to sit below the capped brackets
+    and would *lose* from Policy B). Both selections are verified against
+    the committed deltas before use.
     """
     kids = gross.demographics["n_children"].to_numpy()
     income = gross.base_income
@@ -58,19 +61,27 @@ def candidate_households(gross: d.Electorate) -> dict:
         income[child_rows], gross.weights[child_rows], [0.5]
     )[0]
     row_1 = int(child_rows[np.argmin(np.abs(income[child_rows] - child_median))])
-    childless = np.flatnonzero(kids == 0)
-    p95 = d.weighted_quantile(income[childless], gross.weights[childless], [0.95])[0]
-    row_2 = int(childless[np.argmin(np.abs(income[childless] - p95))])
+    winners_b = np.flatnonzero(gross.deltas[:, 1] > 1.0)
+    winner_median = d.weighted_quantile(
+        income[winners_b], gross.weights[winners_b], [0.5]
+    )[0]
+    row_2 = int(winners_b[np.argmin(np.abs(income[winners_b] - winner_median))])
+    assert gross.deltas[row_1, 0] > 0, "candidate 1 must gain from Policy A"
+    assert gross.deltas[row_2, 1] > 0, "candidate 2 must gain from Policy B"
     return {
         "candidate_1": {
             "row": row_1,
             "income": round(float(income[row_1])),
             "children": int(kids[row_1]),
+            "gross_a": round(float(gross.deltas[row_1, 0])),
+            "gross_b": round(float(gross.deltas[row_1, 1])),
         },
         "candidate_2": {
             "row": row_2,
             "income": round(float(income[row_2])),
             "children": int(kids[row_2]),
+            "gross_a": round(float(gross.deltas[row_2, 0])),
+            "gross_b": round(float(gross.deltas[row_2, 1])),
         },
     }
 
@@ -164,7 +175,8 @@ def main() -> None:
     frame = pd.DataFrame(rows)
     frame.to_csv(OUT / "strategic_equilibria.csv", index=False)
 
-    # Office-seeker variant: rent dominates, societal component flat.
+    # Office-seeker variant: a dollar rent large enough to dominate the
+    # (near-zero, budget-neutral) utilitarian societal component.
     office_rows = []
     for sigma in SIGMAS:
         candidate_1 = Candidate(
@@ -172,14 +184,14 @@ def main() -> None:
             households["candidate_1"]["row"],
             selfish_weight=0.0,
             societal=d.Utilitarian(),
-            office_rent=10.0,
+            office_rent=100_000.0,
         )
         candidate_2 = Candidate(
             "Candidate 2",
             households["candidate_2"]["row"],
             selfish_weight=0.0,
             societal=d.Utilitarian(),
-            office_rent=10.0,
+            office_rent=100_000.0,
         )
         equilibria = pure_nash_equilibria(
             space, candidate_1, candidate_2, sigma=sigma, n_voters=N_VOTERS

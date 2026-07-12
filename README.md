@@ -26,6 +26,13 @@ behavioral layers labeled:
   how each policy's cost is financed, the welfare metric, the electorate
   size, and who turns out are explicit, swappable model choices — the
   findings note reports how the results move under each.
+- **Preferences are a labeled layer too.** The baseline voter maximizes
+  perceived own dollars; `MixedMotivePerception` gives any mixture of
+  `VoterType`s their own welfare function — a selfish weight on the
+  household's stake and a societal weight on the policy's
+  equally-distributed-equivalent income change, dollars either way, with
+  each type's own inequality aversion and information quality
+  ([docs/heterogeneity.md](docs/heterogeneity.md)).
 
 > **What this is and isn't.** A thought experiment about one mechanism:
 > self-interested voting under misperception of measured household
@@ -84,7 +91,8 @@ democrasim/
   electorate.py   # real households as arrays: impacts, weights, adults per household
   perception.py   # PerceptionModel: perceived = attenuation·true + bias + noise
   voting.py       # Plurality (indifference abstains) / Approval / InstantRunoff
-  welfare.py      # Utilitarian, Isoelastic(η); explicit financing closes the budget
+  welfare.py      # Utilitarian, Isoelastic(η) + dollar EDE; financing closes the budget
+  preferences.py  # VoterType mixtures: own-stake and societal motives, one dollar scale
   election.py     # sample voters -> perceive -> vote -> grade against welfare
   experiments.py  # accuracy sweeps, threshold finder, bias sweeps
   toy.py          # labeled synthetic comparators (the old model's worlds)
@@ -134,7 +142,7 @@ uv run democrasim build-data        # ~20 min: 3 simulations, one per subprocess
 ## Development
 
 ```bash
-uv run pytest            # 146 behavioral tests; artifact tests run off the committed data
+uv run pytest            # 172 behavioral tests; artifact tests run off the committed data
 uv run ruff check .
 uv run ruff format .
 uv run python scripts/robustness.py      # every stress row behind the findings
@@ -150,15 +158,16 @@ loudly instead of silently inverting the conclusions.
 ## Endogenous platforms
 
 `democrasim.strategic` closes the loop: two candidates — households from
-the data, each mixing a selfish component (their own net delta) with a
-societal one (a welfare metric with their own inequality aversion) —
+the data, each mixing their own net delta with society's
+equally-distributed-equivalent income change on one dollar scale —
 pick positions in a shared 2D policy space spanned by the measured
-incidence vectors, and pure Nash equilibria are computed exactly.
-Perfect information disciplines platforms to the status quo through
-undercutting; noise relaxes the discipline and self-serving programs
-scale with it; competition filters platforms by constituency breadth,
-not welfare. Details, validation of the interpolated policy space, and
-every number: [docs/strategic.md](docs/strategic.md).
+incidence vectors, against an electorate of any `VoterType` mixture,
+and pure Nash equilibria are computed exactly. Perfect information
+disciplines platforms to the status quo through undercutting; noise
+relaxes the discipline and self-serving programs scale with it; a small
+informed-sociotropic voter share restores it. Details and every number:
+[docs/strategic.md](docs/strategic.md) and
+[docs/heterogeneity.md](docs/heterogeneity.md).
 
 ## Roadmap
 

@@ -12,12 +12,16 @@
     "candidate_1": {
       "row": 100807,
       "income": 109693,
-      "children": 3
+      "children": 3,
+      "gross_a": 1133,
+      "gross_b": 0
     },
     "candidate_2": {
-      "row": 78913,
-      "income": 385413,
-      "children": 0
+      "row": 39882,
+      "income": 578540,
+      "children": 0,
+      "gross_a": 0,
+      "gross_b": 4655
     }
   },
   "welfare_optimal_position_eta1": [

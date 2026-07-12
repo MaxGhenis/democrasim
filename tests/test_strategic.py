@@ -2,10 +2,14 @@ import numpy as np
 import pytest
 
 import democrasim as d
+from democrasim.preferences import VoterType
 from democrasim.strategic import (
+    _SELF_INTERESTED,
     Candidate,
     PolicySpace,
+    _multinomial_win,
     _payoff_matrices,
+    _vote_share_matrices,
     iterated_best_response,
     objective_grid,
     pure_nash_equilibria,
@@ -112,6 +116,22 @@ class TestPolicySpace:
         )
         assert grid[space.position_index(0.0, 0.0)] == 0.0
 
+    def test_dollar_grid_matches_fixed_platform_ede(self):
+        gross = d.load_measured_electorate()
+        space = PolicySpace.from_gross_electorate(gross, grid_points=3)
+        financed = d.apply_financing(gross, "per_capita")
+        expected = d.Isoelastic().dollar_equivalent(financed)
+        grid = space.societal_dollar_grid(d.Isoelastic())
+        assert grid[space.position_index(1.0, 0.0)] == pytest.approx(
+            expected[0], rel=1e-9
+        )
+        assert grid[space.position_index(0.0, 1.0)] == pytest.approx(
+            expected[1], rel=1e-9
+        )
+        assert grid[space.position_index(0.0, 0.0)] == 0.0
+        welfare = space.societal_welfare_grid(d.Isoelastic())
+        assert int(np.argmax(grid)) == int(np.argmax(welfare))
+
 
 class TestObjectives:
     def test_pure_selfish_maximizes_own_household(self):
@@ -142,14 +162,15 @@ class TestObjectives:
 class TestEquilibrium:
     def test_office_seekers_converge(self):
         """Pure office motivation: both chase votes; equilibrium positions
-        coincide (Downsian convergence) on the toy space."""
+        coincide (Downsian convergence) on the toy space. The rent is in
+        dollars now, so it must dominate the toy space's societal spread."""
         space = toy_space()
-        flat = d.Utilitarian()  # ~constant on a budget-neutral space
+        flat = d.Utilitarian()
         c1 = Candidate(
-            "Candidate 1", 0, selfish_weight=0.0, societal=flat, office_rent=10.0
+            "Candidate 1", 0, selfish_weight=0.0, societal=flat, office_rent=10_000.0
         )
         c2 = Candidate(
-            "Candidate 2", 4, selfish_weight=0.0, societal=flat, office_rent=10.0
+            "Candidate 2", 4, selfish_weight=0.0, societal=flat, office_rent=10_000.0
         )
         equilibria = pure_nash_equilibria(space, c1, c2, sigma=50.0, n_voters=1_001)
         assert equilibria, "office-seeker game should have a pure equilibrium"
@@ -192,3 +213,121 @@ class TestEquilibrium:
             for e in pure_nash_equilibria(space, c1, c2, sigma=200.0, n_voters=1_001)
         }
         assert (final[0], final[1]) in profiles
+
+
+class TestHeterogeneousElectorate:
+    def test_explicit_selfish_type_equals_the_default(self):
+        space = toy_space()
+        c1 = Candidate("Candidate 1", 0, selfish_weight=1.0)
+        c2 = Candidate("Candidate 2", 4, selfish_weight=1.0)
+        default = _payoff_matrices(space, c1, c2, 200.0, 1_001)
+        explicit = _payoff_matrices(
+            space, c1, c2, 200.0, 1_001, (VoterType(share=1.0),)
+        )
+        for a, b in zip(default, explicit, strict=True):
+            np.testing.assert_array_equal(a, b)
+
+    def test_type_mixture_is_share_linear_in_vote_shares(self):
+        space = toy_space()
+        selfish = (VoterType(share=1.0, selfish_weight=1.0),)
+        sociotropic = (VoterType(share=1.0, selfish_weight=0.0, eta=1.0),)
+        mixture = (
+            VoterType(share=0.3, selfish_weight=1.0),
+            VoterType(share=0.7, selfish_weight=0.0, eta=1.0),
+        )
+        first_s, abstain_s = _vote_share_matrices(space, 200.0, selfish)
+        first_a, abstain_a = _vote_share_matrices(space, 200.0, sociotropic)
+        first_m, abstain_m = _vote_share_matrices(space, 200.0, mixture)
+        np.testing.assert_allclose(first_m, 0.3 * first_s + 0.7 * first_a, atol=1e-12)
+        np.testing.assert_allclose(
+            abstain_m, 0.3 * abstain_s + 0.7 * abstain_a, atol=1e-12
+        )
+
+    def test_own_noise_override_reproduces_a_zero_noise_game(self):
+        space = toy_space()
+        override = (VoterType(share=1.0, selfish_weight=1.0, own_noise_sd=0.0),)
+        with_override = _vote_share_matrices(space, 1_000.0, override)
+        at_zero = _vote_share_matrices(space, 0.0, _SELF_INTERESTED)
+        np.testing.assert_array_equal(with_override[0], at_zero[0])
+        np.testing.assert_array_equal(with_override[1], at_zero[1])
+
+    def test_sociotropic_informed_electorate_enacts_the_welfare_optimum(self):
+        """Deterministic sociotropic voters make the higher-EDE position win
+        every pairing, so every equilibrium enacts the welfare optimum —
+        whatever the candidates want."""
+        space = toy_space()
+        types = (VoterType(share=1.0, selfish_weight=0.0, eta=1.0),)
+        ede = space.societal_dollar_grid(d.Isoelastic(eta=1.0))
+        best = float(ede.max())
+        positions = space.positions
+        for weight in (0.0, 1.0):
+            c1 = Candidate("Candidate 1", 0, selfish_weight=weight)
+            c2 = Candidate("Candidate 2", 4, selfish_weight=weight)
+            equilibria = pure_nash_equilibria(
+                space, c1, c2, sigma=10_000.0, n_voters=10_001, voter_types=types
+            )
+            assert equilibria
+            for eq in equilibria:
+                value = (
+                    eq.p_win_1 * ede[positions.index(eq.position_1)]
+                    + (1.0 - eq.p_win_1) * ede[positions.index(eq.position_2)]
+                )
+                assert value == pytest.approx(best, abs=1e-9)
+
+    def test_general_path_matches_a_naive_reimplementation(self):
+        space = toy_space(grid_points=3)
+        selfish_weight, sigma_own, sigma_soc, eta = 0.4, 250.0, 150.0, 1.0
+        types = (
+            VoterType(
+                share=1.0,
+                selfish_weight=selfish_weight,
+                eta=eta,
+                societal_noise_sd=sigma_soc,
+            ),
+        )
+        first, abstain = _vote_share_matrices(space, sigma_own, types)
+
+        from democrasim.perception import _phi
+
+        ede = space.societal_dollar_grid(d.Isoelastic(eta=eta))
+        positions = space.positions
+        sd = np.sqrt(2.0) * np.sqrt(
+            selfish_weight**2 * sigma_own**2
+            + (1.0 - selfish_weight) ** 2 * sigma_soc**2
+        )
+        n = len(positions)
+        expected = np.empty((n, n))
+        for i, (a1, b1) in enumerate(positions):
+            for j, (a2, b2) in enumerate(positions):
+                margins = space.net_deltas(a1, b1) - space.net_deltas(a2, b2)
+                mu = selfish_weight * margins + (1.0 - selfish_weight) * (
+                    ede[i] - ede[j]
+                )
+                expected[i, j] = float(np.mean(_phi(mu / sd)))
+        np.testing.assert_allclose(first, expected, atol=1e-12)
+        np.testing.assert_array_equal(abstain, np.zeros_like(abstain))
+
+    def test_tuple_societal_bias_is_rejected(self):
+        space = toy_space()
+        types = (VoterType(share=1.0, selfish_weight=0.0, societal_bias=(0.0, 100.0)),)
+        with pytest.raises(ValueError, match="scalar societal bias"):
+            _vote_share_matrices(space, 100.0, types)
+
+    def test_multinomial_win_matches_the_scalar_function(self):
+        margins = np.array([40.0, -10.0, 5.0, 0.0, -3.0])
+        weights = np.array([1.0, 2.0, 1.0, 3.0, 1.0])
+        for sigma, n in ((100.0, 1_001), (0.0, 1_001), (100.0, None), (0.0, None)):
+            total = weights.sum()
+            if sigma > 0:
+                from democrasim.perception import _phi
+
+                p_first = (
+                    float(weights @ _phi(margins / (sigma * np.sqrt(2.0)))) / total
+                )
+                p_abstain = 0.0
+            else:
+                p_first = float(weights[margins > 0].sum()) / total
+                p_abstain = float(weights[margins == 0].sum()) / total
+            assert float(
+                _multinomial_win(np.float64(p_first), np.float64(p_abstain), n)
+            ) == pytest.approx(win_probability(margins, weights, sigma, n), abs=0)

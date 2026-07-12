@@ -18,35 +18,69 @@ the measured data makes cheap:
   status quo ``(0, 0)`` is in the space.
 - **Candidates.** Each candidate's objective mixes a selfish component
   (their own household's net delta — candidates are rows of the
-  electorate) and a societal component (a welfare metric with their own
-  inequality aversion), plus an optional office rent. Components are
-  min–max normalized over the grid so dollars and welfare units mix on a
-  common [0, 1] scale; the weights are the interpretable knobs.
-- **Election.** The probability candidate 1 wins depends only on the
-  *difference* of positions, through the same probit-and-normal-
-  approximation machinery as :func:`democrasim.analytic_plurality_curve`.
-  A (2G−1)² difference table therefore prices every one of the G⁴ profile
-  comparisons, and exact best-response matrices follow.
+  electorate) and a societal component (the position's change in
+  equally-distributed-equivalent household income under the candidate's
+  own welfare lens), plus an optional office rent. Every term is dollars
+  per year, so the selfish weight trades own dollars against
+  society-wide dollars per household with no normalization.
+- **Voters.** The electorate defaults to the baseline self-interested
+  voter, but any mixture of :class:`~democrasim.preferences.VoterType` s
+  — heterogeneous selfish weights, inequality aversions, and information
+  quality — slots into the same tables via ``voter_types``. Every actor
+  in the game, candidate or voter, draws its utility from one dollar
+  family.
+- **Election.** For self-interested voters the probability candidate 1
+  wins depends only on the *difference* of positions, through the same
+  probit-and-normal-approximation machinery as
+  :func:`democrasim.analytic_plurality_curve`, so a (2G−1)² difference
+  table prices every one of the G⁴ profile comparisons. Sociotropic
+  components add a position-pair-specific term (societal value is not a
+  function of the difference); those tables cost G⁴ evaluations, exact
+  either way.
 
 Everything here inherits the fixed-platform model's labeled assumptions
-(perception, financing, electorate size) and adds one more: the candidate
-objective specification.
+(perception, financing, electorate size) and adds two more: the candidate
+objective specification and, optionally, the voter-preference mixture.
 """
 
 from dataclasses import dataclass, field
-from math import erf, sqrt
+from math import sqrt
 
 import numpy as np
 
 from democrasim.electorate import Electorate, FloatArray
+from democrasim.perception import _phi
+from democrasim.preferences import VoterType
 from democrasim.welfare import Isoelastic, WelfareMetric, apply_financing
 
-_ERF = np.vectorize(erf)
+#: The baseline electorate: everyone votes pure perceived self-interest.
+_SELF_INTERESTED = (VoterType(share=1.0, selfish_weight=1.0),)
 
 
-def _phi(z: FloatArray) -> FloatArray:
-    """Standard normal CDF, vectorized (mirrors democrasim.perception)."""
-    return 0.5 * (1.0 + _ERF(np.asarray(z, dtype=np.float64) / sqrt(2.0)))
+def _multinomial_win(
+    p_first: FloatArray, p_abstain: FloatArray, n_voters: int | None
+) -> FloatArray:
+    """P(the first option wins) from expected vote shares, elementwise.
+
+    Normal approximation to the vote-count difference at finite
+    ``n_voters``; a step function of the expected-share gap in the
+    large-population limit. All-abstain cells (including both candidates
+    at the same position) are exact ties and return 0.5.
+    """
+    p_first = np.asarray(p_first, dtype=np.float64)
+    p_abstain = np.asarray(p_abstain, dtype=np.float64)
+    active = 1.0 - p_abstain
+    gap = 2.0 * p_first - active  # p_first − p_second
+    step = np.where(gap > 0, 1.0, np.where(gap < 0, 0.0, 0.5))
+    if n_voters is None:
+        out = step
+    else:
+        variance = n_voters * (active - gap**2)
+        positive = variance > 0
+        with np.errstate(divide="ignore", invalid="ignore"):
+            z = np.where(positive, n_voters * gap / np.sqrt(variance), 0.0)
+        out = np.where(positive, _phi(z), step)
+    return np.where(active == 0, 0.5, out)
 
 
 def win_probability(
@@ -65,22 +99,12 @@ def win_probability(
     """
     total = weights.sum()
     if sigma > 0:
-        p_first_each = _phi(margins / (sigma * sqrt(2.0)))
-        p_first = float(weights @ p_first_each) / total
+        p_first = float(weights @ _phi(margins / (sigma * sqrt(2.0)))) / total
         p_abstain = 0.0
     else:
         p_first = float(weights[margins > 0].sum()) / total
         p_abstain = float(weights[margins == 0].sum()) / total
-    p_second = 1.0 - p_first - p_abstain
-    gap = p_first - p_second
-    if p_first + p_second == 0:
-        return 0.5  # everyone abstains; identical enactments either way
-    if n_voters is None:
-        return 1.0 if gap > 0 else (0.5 if gap == 0 else 0.0)
-    variance = n_voters * (p_first + p_second - gap**2)
-    if variance <= 0:
-        return 1.0 if gap > 0 else (0.5 if gap == 0 else 0.0)
-    return float(0.5 * (1.0 + erf(n_voters * gap / sqrt(2.0 * variance))))
+    return float(_multinomial_win(np.float64(p_first), np.float64(p_abstain), n_voters))
 
 
 @dataclass(frozen=True)
@@ -152,21 +176,40 @@ class PolicySpace:
         """Per-adult net stakes of position (α, β). Exactly linear."""
         return alpha * self.net_a + beta * self.net_b
 
+    def _position_electorate(self, alpha: float, beta: float) -> Electorate:
+        zeros = np.zeros_like(self.net_a)
+        return Electorate(
+            deltas=np.column_stack([self.net_deltas(alpha, beta), zeros]),
+            weights=self.weights,
+            base_income=self.base_income,
+            hh_adults=self.hh_adults,
+            policy_labels=("position", "status quo"),
+            source="strategic policy space (financed, interpolated)",
+        )
+
     def societal_welfare_grid(self, metric: WelfareMetric) -> FloatArray:
         """metric's welfare change for every grid position (vs status quo)."""
-        values = np.empty(len(self.alphas) * len(self.betas))
-        zeros = np.zeros_like(self.net_a)
-        for index, (alpha, beta) in enumerate(self.positions):
-            electorate = Electorate(
-                deltas=np.column_stack([self.net_deltas(alpha, beta), zeros]),
-                weights=self.weights,
-                base_income=self.base_income,
-                hh_adults=self.hh_adults,
-                policy_labels=("position", "status quo"),
-                source="strategic policy space (financed, interpolated)",
-            )
-            values[index] = metric.per_policy(electorate)[0]
-        return values
+        return np.array(
+            [
+                metric.per_policy(self._position_electorate(alpha, beta))[0]
+                for alpha, beta in self.positions
+            ]
+        )
+
+    def societal_dollar_grid(self, metric: WelfareMetric) -> FloatArray:
+        """Each position's societal value in dollars per household per year.
+
+        The change in equally-distributed-equivalent household income vs
+        the status quo (``metric.dollar_equivalent``); ranks positions
+        exactly as :meth:`societal_welfare_grid` does, on a scale
+        commensurable with household stakes.
+        """
+        return np.array(
+            [
+                metric.dollar_equivalent(self._position_electorate(alpha, beta))[0]
+                for alpha, beta in self.positions
+            ]
+        )
 
     def welfare_optimal_position(self, metric: WelfareMetric) -> tuple[float, float]:
         grid = self.societal_welfare_grid(metric)
@@ -177,15 +220,17 @@ class PolicySpace:
 class Candidate:
     """A policy-motivated candidate with a selfish and a societal component.
 
-    The objective over enacted positions is
-    ``selfish_weight · Self̃(p) + (1 − selfish_weight) · Soc̃(p)``, where
-    Self is the candidate's own household net delta at ``p``, Soc is
-    ``societal.per_policy`` welfare, and tildes denote min–max
-    normalization over the policy grid (dollars and welfare units are not
-    commensurable; the normalized mix makes ``selfish_weight`` the
-    interpretable knob). ``office_rent`` adds a fixed win bonus in the
-    same normalized units — set it large with ``selfish_weight = 0`` and a
-    flat societal metric to recover pure office-seeking.
+    The objective over enacted positions, in dollars per year, is
+    ``selfish_weight · Self(p) + (1 − selfish_weight) · Soc(p)``, where
+    Self is the candidate's own household net delta at ``p`` (candidates
+    are rows of the electorate) and Soc is the position's change in
+    equally-distributed-equivalent household income under ``societal`` —
+    the candidate's own welfare lens, e.g. ``Isoelastic(eta)``. Both
+    components are dollars, so at ``selfish_weight = 0.5`` the candidate
+    trades a dollar of their own for a dollar of society-wide EDE income
+    per household. ``office_rent`` adds a fixed dollar win bonus — set it
+    large with ``selfish_weight = 0`` and a flat societal metric to
+    recover pure office-seeking.
     """
 
     label: str
@@ -199,15 +244,8 @@ class Candidate:
             raise ValueError("selfish_weight must be in [0, 1]")
 
 
-def _normalize(values: FloatArray) -> FloatArray:
-    spread = values.max() - values.min()
-    if spread <= 0:
-        return np.zeros_like(values)
-    return (values - values.min()) / spread
-
-
 def objective_grid(space: PolicySpace, candidate: Candidate) -> FloatArray:
-    """The candidate's (normalized) utility of each enacted grid position."""
+    """The candidate's utility of each enacted grid position, in dollars."""
     row = candidate.household_index
     selfish = np.array(
         [
@@ -215,10 +253,10 @@ def objective_grid(space: PolicySpace, candidate: Candidate) -> FloatArray:
             for alpha, beta in space.positions
         ]
     )
-    societal = space.societal_welfare_grid(candidate.societal)
-    return candidate.selfish_weight * _normalize(selfish) + (
-        1.0 - candidate.selfish_weight
-    ) * _normalize(societal)
+    societal = space.societal_dollar_grid(candidate.societal)
+    return (
+        candidate.selfish_weight * selfish + (1.0 - candidate.selfish_weight) * societal
+    )
 
 
 @dataclass(frozen=True)
@@ -232,30 +270,120 @@ class Equilibrium:
     utility_2: float
 
 
-def _win_probability_table(
-    space: PolicySpace, sigma: float, n_voters: int | None
-) -> FloatArray:
-    """P(candidate 1 wins) for every position *difference*.
+def _cloud(space: PolicySpace) -> tuple[FloatArray, FloatArray, FloatArray]:
+    if space.comp_a is not None:
+        return space.comp_a, space.comp_b, space.comp_weights
+    return space.net_a, space.net_b, space.weights
 
-    Margins between positions p₁=(a₁,b₁) and p₂=(a₂,b₂) are
+
+def _difference_indices(space: PolicySpace) -> tuple[np.ndarray, np.ndarray]:
+    """Index maps from position pairs (i, j) into difference tables."""
+    n_alpha, n_beta = len(space.alphas), len(space.betas)
+    ai, bi = np.divmod(np.arange(n_alpha * n_beta), n_beta)
+    da = ai[:, None] - ai[None, :] + (n_alpha - 1)
+    db = bi[:, None] - bi[None, :] + (n_beta - 1)
+    return da, db
+
+
+def _selfish_share_tables(
+    space: PolicySpace, sigma_own: float
+) -> tuple[FloatArray, FloatArray]:
+    """Expected (vote-for-1, abstain) shares of a pure-selfish type.
+
+    Own margins between positions p₁=(a₁,b₁) and p₂=(a₂,b₂) are
     ``(a₁−a₂)·net_a + (b₁−b₂)·net_b`` — a function of the difference only —
     so one (2G_α−1)×(2G_β−1) table prices every profile.
     """
     n_alpha, n_beta = len(space.alphas), len(space.betas)
     step_a = space.alphas[1] - space.alphas[0] if n_alpha > 1 else 1.0
     step_b = space.betas[1] - space.betas[0] if n_beta > 1 else 1.0
-    if space.comp_a is not None:
-        cloud_a, cloud_b, cloud_w = space.comp_a, space.comp_b, space.comp_weights
-    else:
-        cloud_a, cloud_b, cloud_w = space.net_a, space.net_b, space.weights
-    table = np.empty((2 * n_alpha - 1, 2 * n_beta - 1))
+    cloud_a, cloud_b, cloud_w = _cloud(space)
+    shares = cloud_w / cloud_w.sum()
+    first = np.empty((2 * n_alpha - 1, 2 * n_beta - 1))
+    abstain = np.zeros_like(first)
     for da in range(-(n_alpha - 1), n_alpha):
         for db in range(-(n_beta - 1), n_beta):
             margins = (da * step_a) * cloud_a + (db * step_b) * cloud_b
-            table[da + n_alpha - 1, db + n_beta - 1] = win_probability(
-                margins, cloud_w, sigma, n_voters
+            if sigma_own > 0:
+                value = float(shares @ _phi(margins / (sigma_own * sqrt(2.0))))
+            else:
+                value = float(shares[margins > 0].sum())
+                abstain[da + n_alpha - 1, db + n_beta - 1] = float(
+                    shares[margins == 0].sum()
+                )
+            first[da + n_alpha - 1, db + n_beta - 1] = value
+    return first, abstain
+
+
+def _vote_share_matrices(
+    space: PolicySpace, sigma: float, voter_types: tuple[VoterType, ...]
+) -> tuple[FloatArray, FloatArray]:
+    """Expected (vote-for-1, abstain) shares for every position pair.
+
+    Mixes the :class:`VoterType` s exactly (shares are weights, not draws).
+    Pure-selfish types ride the difference table; purely sociotropic types
+    compare each pair's societal dollar values directly; interior types
+    need the full pair-by-pair computation over the compressed stake cloud
+    — exact in all three cases. Only scalar societal bias is supported
+    here, and a scalar shifts every position equally, so it cancels from
+    every comparison.
+    """
+    n_positions = len(space.alphas) * len(space.betas)
+    da_idx, db_idx = _difference_indices(space)
+    p_first = np.zeros((n_positions, n_positions))
+    p_abstain = np.zeros((n_positions, n_positions))
+    ede_grids: dict[float, FloatArray] = {}
+    for voter_type in voter_types:
+        if isinstance(voter_type.societal_bias, tuple):
+            raise ValueError(
+                "the position game supports only scalar societal bias "
+                "(policies are grid positions, not a fixed pair) — and a "
+                "scalar cancels from every pairwise comparison"
             )
-    return table
+        sigma_own = (
+            voter_type.own_noise_sd if voter_type.own_noise_sd is not None else sigma
+        )
+        s = voter_type.selfish_weight
+        sd = sqrt(2.0) * sqrt(
+            s**2 * sigma_own**2 + (1.0 - s) ** 2 * voter_type.societal_noise_sd**2
+        )
+        if s == 1.0:
+            first_d, abstain_d = _selfish_share_tables(space, sigma_own)
+            p_first += voter_type.share * first_d[da_idx, db_idx]
+            p_abstain += voter_type.share * abstain_d[da_idx, db_idx]
+            continue
+        if voter_type.eta not in ede_grids:
+            ede_grids[voter_type.eta] = space.societal_dollar_grid(
+                Isoelastic(eta=voter_type.eta)
+            )
+        ede = ede_grids[voter_type.eta]
+        delta_ede = ede[:, None] - ede[None, :]
+        if s == 0.0:
+            if sd > 0:
+                p_first += voter_type.share * _phi(delta_ede / sd)
+            else:
+                p_first += voter_type.share * (delta_ede > 0)
+                p_abstain += voter_type.share * (delta_ede == 0)
+            continue
+        cloud_a, cloud_b, cloud_w = _cloud(space)
+        shares = cloud_w / cloud_w.sum()
+        alphas_flat = np.repeat(space.alphas, len(space.betas))
+        betas_flat = np.tile(space.betas, len(space.alphas))
+        first_k = np.empty((n_positions, n_positions))
+        abstain_k = np.zeros_like(first_k)
+        for i in range(n_positions):
+            margins = (alphas_flat[i] - alphas_flat)[:, None] * cloud_a[None, :] + (
+                betas_flat[i] - betas_flat
+            )[:, None] * cloud_b[None, :]
+            mu = s * margins + (1.0 - s) * delta_ede[i][:, None]
+            if sd > 0:
+                first_k[i] = _phi(mu / sd) @ shares
+            else:
+                first_k[i] = (mu > 0) @ shares
+                abstain_k[i] = (mu == 0) @ shares
+        p_first += voter_type.share * first_k
+        p_abstain += voter_type.share * abstain_k
+    return p_first, p_abstain
 
 
 def _payoff_matrices(
@@ -264,19 +392,15 @@ def _payoff_matrices(
     candidate_2: Candidate,
     sigma: float,
     n_voters: int | None,
+    voter_types: tuple[VoterType, ...] = _SELF_INTERESTED,
 ) -> tuple[FloatArray, FloatArray, FloatArray]:
     """Expected utilities and P(candidate 1 wins), all G x G matrices."""
-    n_alpha, n_beta = len(space.alphas), len(space.betas)
-    n_positions = n_alpha * n_beta
-    win_table = _win_probability_table(space, sigma, n_voters)
     utility_1 = objective_grid(space, candidate_1)
     utility_2 = objective_grid(space, candidate_2)
 
-    ai, bi = np.divmod(np.arange(n_positions), n_beta)
     # p_win[i, j] = P(candidate 1 wins with position i against position j)
-    da = ai[:, None] - ai[None, :] + (n_alpha - 1)
-    db = bi[:, None] - bi[None, :] + (n_beta - 1)
-    p_win = win_table[da, db]
+    p_first, p_abstain = _vote_share_matrices(space, sigma, voter_types)
+    p_win = _multinomial_win(p_first, p_abstain, n_voters)
 
     payoff_1 = (
         p_win * (utility_1[:, None] + candidate_1.office_rent)
@@ -299,10 +423,17 @@ def pure_nash_equilibria(
     *,
     sigma: float,
     n_voters: int | None = 10_001,
+    voter_types: tuple[VoterType, ...] = _SELF_INTERESTED,
 ) -> list[Equilibrium]:
-    """Every pure-strategy Nash profile, by exhaustive verification."""
+    """Every pure-strategy Nash profile, by exhaustive verification.
+
+    ``voter_types`` sets the electorate's preference mixture; the default
+    is the baseline pure-self-interest voter. ``sigma`` is the shared
+    own-stake perception noise (types can override it per
+    ``VoterType.own_noise_sd``).
+    """
     payoff_1, payoff_2, p_win = _payoff_matrices(
-        space, candidate_1, candidate_2, sigma, n_voters
+        space, candidate_1, candidate_2, sigma, n_voters, voter_types
     )
     best_1 = payoff_1.max(axis=0)  # best reply value against each opponent j
     best_2 = payoff_2.max(axis=0)
@@ -333,6 +464,7 @@ def iterated_best_response(
     *,
     sigma: float,
     n_voters: int | None = 10_001,
+    voter_types: tuple[VoterType, ...] = _SELF_INTERESTED,
     start_1: tuple[float, float] = (0.0, 0.0),
     start_2: tuple[float, float] = (0.0, 0.0),
     max_iterations: int = 200,
@@ -344,7 +476,7 @@ def iterated_best_response(
     no pure equilibrium attracts.
     """
     payoff_1, payoff_2, _ = _payoff_matrices(
-        space, candidate_1, candidate_2, sigma, n_voters
+        space, candidate_1, candidate_2, sigma, n_voters, voter_types
     )
     i = space.position_index(*start_1)
     j = space.position_index(*start_2)
