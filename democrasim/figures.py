@@ -366,6 +366,83 @@ def strategic_positions(frame: pd.DataFrame) -> plt.Figure:
         return fig
 
 
+def axis_map(frame: pd.DataFrame) -> plt.Figure:
+    """Inequality along the measured redistribution axis.
+
+    Expects the axis_map frame (one row per position) with ``position`` and
+    ``gini``. The curve's flattening is the measured fact behind
+    single-peaked demand: equal steps of policy buy less equality as the
+    axis runs out.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        ax.plot(frame["position"], frame["gini"], color=SERIES[0])
+        ax.set_xlabel(
+            "position t: every bracket rate +t x 10 points, revenue rebated per adult"
+        )
+        ax.set_ylabel("Gini of household net income")
+        ax.set_title("What the dial does to inequality")
+        first, last = frame.iloc[0], frame.iloc[-1]
+        ax.annotate(
+            f"current law {first['gini']:.3f}",
+            (first["position"], first["gini"]),
+            textcoords="offset points",
+            xytext=(8, -2),
+            fontsize=8.5,
+            color=INK_SECONDARY,
+        )
+        ax.annotate(
+            f"{last['gini']:.3f} at t=1\n"
+            f"(${last['transfer_per_adult']:,.0f} per adult)",
+            (last["position"], last["gini"]),
+            textcoords="offset points",
+            xytext=(-12, 28),
+            ha="right",
+            fontsize=8.5,
+            color=INK_SECONDARY,
+        )
+        return fig
+
+
+def axis_demand(frame: pd.DataFrame) -> plt.Figure:
+    """Demanded position against the voter's belief about policy reach.
+
+    Expects the axis_demand frame: ``belief_slope``, ``demanded_position``,
+    and ``target_name``. Attenuated beliefs (left of 1.0) inflate demand
+    until the axis saturates.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.2))
+        for j, name in enumerate(dict.fromkeys(frame["target_name"])):
+            sub = frame[frame["target_name"] == name].sort_values("belief_slope")
+            ax.plot(
+                sub["belief_slope"],
+                sub["demanded_position"],
+                color=SERIES[j % len(SERIES)],
+                marker="o",
+                markersize=3.5,
+                label=(
+                    "target: "
+                    f"{name.replace('_of_reach', '').replace('_', ' ')} of reach"
+                ),
+            )
+        ax.axvline(1.0, color=BASELINE, linewidth=1.0, linestyle=(0, (4, 4)))
+        ax.text(
+            1.0,
+            1.02,
+            " correct beliefs",
+            fontsize=8.5,
+            color=INK_MUTED,
+            va="bottom",
+        )
+        ax.set_xlabel("believed policy effect, as a multiple of the truth")
+        ax.set_ylabel("policy intensity demanded (t)")
+        ax.set_ylim(-0.04, 1.1)
+        ax.set_title("Underestimating a policy's reach inflates the policy demanded")
+        ax.legend(loc="upper right", fontsize=8)
+        return fig
+
+
 def rules_comparison(frame: pd.DataFrame) -> plt.Figure:
     """Welfare tracking vs noise per voting rule, three-option ballot.
 
@@ -484,6 +561,8 @@ def save_figures(figures: dict[str, plt.Figure], directory: Path | str) -> list[
 
 __all__: Iterable[str] = [
     "accuracy_curve",
+    "axis_demand",
+    "axis_map",
     "bias_curve",
     "impact_distribution",
     "margin_distribution",

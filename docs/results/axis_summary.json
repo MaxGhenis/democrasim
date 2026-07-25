@@ -1,0 +1,94 @@
+{
+  "provenance": {
+    "generator": "scripts/axis_experiments.py",
+    "democrasim_version": "0.2.0",
+    "artifact": "us_2026_redistribution",
+    "artifact_sha256": "1f8bef1f7b9b93e80c362c70ddf60d3cd1e9921a2720e53f4747782ab1032c38",
+    "grid_points": 41,
+    "n_voters": 10001,
+    "linearity_validation": "docs/results/axis_linearity_validation.json"
+  },
+  "gini_status_quo": 0.45409574250721807,
+  "gini_at_full": 0.41354106535207413,
+  "ede_optimum_position": 1.0,
+  "targets": {
+    "0%_of_reach": 0.45409574250721807,
+    "25%_of_reach": 0.4439570732184321,
+    "50%_of_reach": 0.4338184039296461,
+    "75%_of_reach": 0.4236797346408601,
+    "100%_of_reach": 0.41354106535207413
+  },
+  "self_interest": {
+    "share_households_gaining_at_full": 0.6861654955368023,
+    "net_stake_by_income_decile": [
+      {
+        "decile": 1,
+        "income_upper": 34709.62890625,
+        "mean_net_stake": 7777.13313824583
+      },
+      {
+        "decile": 2,
+        "income_upper": 49581.3984375,
+        "mean_net_stake": 6945.864783752645
+      },
+      {
+        "decile": 3,
+        "income_upper": 63273.48046875,
+        "mean_net_stake": 7506.551270721186
+      },
+      {
+        "decile": 4,
+        "income_upper": 76941.71875,
+        "mean_net_stake": 7090.78062126323
+      },
+      {
+        "decile": 5,
+        "income_upper": 92292.34375,
+        "mean_net_stake": 6210.801857652199
+      },
+      {
+        "decile": 6,
+        "income_upper": 113218.109375,
+        "mean_net_stake": 4749.976651752443
+      },
+      {
+        "decile": 7,
+        "income_upper": 139112.671875,
+        "mean_net_stake": 2404.931407099753
+      },
+      {
+        "decile": 8,
+        "income_upper": 175757.5625,
+        "mean_net_stake": -1099.5916987110522
+      },
+      {
+        "decile": 9,
+        "income_upper": 258920.71875,
+        "mean_net_stake": -5909.95539017962
+      },
+      {
+        "decile": 10,
+        "income_upper": 26771866.0,
+        "mean_net_stake": -35670.6520735024
+      }
+    ],
+    "equilibria": [
+      {
+        "own_noise_sd": 0.0,
+        "enacted": 1.0,
+        "n_equilibria": 1
+      },
+      {
+        "own_noise_sd": 1000.0,
+        "enacted": 1.0,
+        "n_equilibria": 1
+      },
+      {
+        "own_noise_sd": 10000.0,
+        "enacted": 1.0,
+        "n_equilibria": 1
+      }
+    ]
+  },
+  "belief_mixture_target": 0.4338184039296461
+}

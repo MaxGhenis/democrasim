@@ -93,6 +93,7 @@ democrasim/
   voting.py       # Plurality / Approval / Score / STAR / InstantRunoff (indifference abstains)
   welfare.py      # Utilitarian, Isoelastic(η) + dollar EDE; financing closes the budget
   preferences.py  # VoterType mixtures: own-stake and societal motives, one dollar scale
+  axis.py         # a continuous policy dial: ideal outcomes and beliefs about the mapping
   election.py     # sample voters -> perceive -> vote -> grade against welfare
   experiments.py  # accuracy sweeps, threshold finder, bias sweeps
   toy.py          # labeled synthetic comparators (the old model's worlds)
@@ -168,6 +169,17 @@ relaxes the discipline and self-serving programs scale with it; a small
 informed-sociotropic voter share restores it. Details and every number:
 [docs/strategic.md](docs/strategic.md) and
 [docs/heterogeneity.md](docs/heterogeneity.md).
+
+## A continuous dial
+
+`democrasim.axis` swaps the two-policy ballot for one continuous
+instrument — every bracket rate up by `t × 10` points, revenue back as an
+equal per-adult transfer ($4,809 at `t = 1`, 68.6% of households
+gaining) — and gives actors preferences over the *outcome* plus a belief
+about how far policy moves it. Demand for policy is then derived: halve
+what a voter believes the policy achieves and they demand twice as much
+of it, and an electorate aggregates those beliefs by median, not by mean.
+Details: [docs/axis.md](docs/axis.md).
 
 ## Roadmap
 

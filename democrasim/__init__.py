@@ -12,6 +12,16 @@ A thought experiment about one mechanism. Not political science, and never
 election prediction.
 """
 
+from democrasim.axis import (
+    AxisCandidate,
+    AxisEquilibrium,
+    OutcomeType,
+    RedistributionAxis,
+    axis_equilibria,
+    demanded_position,
+    median_ideal_position,
+    weighted_gini,
+)
 from democrasim.data import artifact_metadata, load_measured_electorate
 from democrasim.election import ElectionResult, ElectionSpec, run_election
 from democrasim.electorate import Electorate, weighted_quantile
@@ -66,6 +76,8 @@ __all__ = [
     "PERFECT_PERCEPTION",
     "STAR",
     "Approval",
+    "AxisCandidate",
+    "AxisEquilibrium",
     "Candidate",
     "ElectionResult",
     "ElectionSpec",
@@ -76,9 +88,11 @@ __all__ = [
     "Isoelastic",
     "LinearGaussianPerception",
     "MixedMotivePerception",
+    "OutcomeType",
     "PerceptionModel",
     "Plurality",
     "PolicySpace",
+    "RedistributionAxis",
     "Score",
     "Tally",
     "Utilitarian",
@@ -90,17 +104,21 @@ __all__ = [
     "analytic_plurality_curve",
     "apply_financing",
     "artifact_metadata",
+    "axis_equilibria",
     "bias_sweep",
+    "demanded_position",
     "find_threshold",
     "homogeneous_toy",
     "iterated_best_response",
     "load_measured_electorate",
+    "median_ideal_position",
     "moment_matched_toy",
     "pure_nash_equilibria",
     "ranking_accuracy",
     "run_election",
     "run_elections",
     "summarize_elections",
+    "weighted_gini",
     "weighted_quantile",
     "welfare_optimal",
     "win_probability",

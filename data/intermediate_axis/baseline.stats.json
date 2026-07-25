@@ -1,0 +1,16 @@
+{
+  "scenario": "baseline",
+  "intensity": 0.0,
+  "baseline_rates": {
+    "1": 0.1,
+    "2": 0.12,
+    "3": 0.22,
+    "4": 0.24,
+    "5": 0.32,
+    "6": 0.35,
+    "7": 0.37
+  },
+  "reform": null,
+  "microseries_net_income_total": 16658376267717.443,
+  "n_households": 57240
+}
