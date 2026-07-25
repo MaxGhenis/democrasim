@@ -143,7 +143,7 @@ uv run democrasim build-data        # ~20 min: 3 simulations, one per subprocess
 ## Development
 
 ```bash
-uv run pytest            # 172 behavioral tests; artifact tests run off the committed data
+uv run pytest            # 207 behavioral tests; artifact tests run off the committed data
 uv run ruff check .
 uv run ruff format .
 uv run python scripts/robustness.py      # every stress row behind the findings
