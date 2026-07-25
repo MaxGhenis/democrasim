@@ -65,7 +65,26 @@ noise level (traversing a cycling regime around 2--5\% shares where
 the pure-equilibrium set can be empty), and the residual distortion is
 value pluralism --- fully
 informed sociotropic voters split when their inequality aversions
-disagree. The mechanisms are classical; the contribution is
+disagree. With the status quo votable as a third ballot option, every
+rule tested --- plurality, approval, score, STAR, instant runoff ---
+tracks perfectly at perfect information: the knife-edge was ballot
+design, not aggregation. The exception prices a convention: under
+strict approval the status quo itself can never be approved, one
+program's beneficiaries elect it unopposed, and the threshold
+instruction alone swings perfect-information tracking from 0\% to
+100\% in an electorate where three in four voters are near-indifferent;
+under noise the ordering reverses --- approval most robust, plurality
+worst --- and every gap between rules stays smaller than what the
+agenda decides. And on a continuous redistribution axis --- every
+bracket rate up to ten points higher, revenue returned as a \$4{,}809
+per-adult transfer at full intensity, 68.6\% of households gaining ---
+demand for policy inflates with the reciprocal of belief in its reach
+(a voter wanting half the achievable inequality reduction who believes
+policy half as effective demands the entire axis), two-candidate
+competition enacts the median belief rather than the canceling mean,
+and a purely self-interested electorate enacts the maximum at every
+noise level; moderation there comes from values or beliefs, not
+stakes. The mechanisms are classical; the contribution is
 dollar-denominated calibration on measured microdata, a reusable
 open-source harness, and a direct path to replacing the perception
 assumption with survey estimates.
@@ -137,6 +156,23 @@ in weights, inequality aversion, and information quality
 information conditions under which elections grade fixed policies well
 are close to the opposite of those under which they discipline the
 policies candidates offer.
+
+Two extensions widen what voters choose among. Putting the status quo
+on the ballot as a third option dissolves the perfect-information
+knife-edge under every voting rule tested --- the two-option failure
+was ballot design, not a plurality pathology --- while approval
+voting's threshold convention alone swings the perfect-information
+outcome between 0\% and 100\%, noise reverses the rule ordering with
+approval most robust and plurality worst, and every gap between rules
+stays smaller than what the agenda decides (Section~\ref{sec:rules}).
+And replacing the policy pair with a continuous redistribution axis ---
+every bracket rate up to ten points higher, revenue returned per
+adult --- turns demand for policy into a derived quantity: voters who
+understate policy's reach demand more of it, reciprocally;
+two-candidate competition enacts the median belief rather than the
+canceling mean; and a purely self-interested electorate on measured
+incidence enacts the maximum at every noise level, the demand side of
+\citet{meltzer1981} in operation (Section~\ref{sec:axis}).
 
 The exercise is a thought experiment about one mechanism: self-interested
 voting on misperceived, engine-computed household impacts. It is not
@@ -362,6 +398,87 @@ absolute margin) is the jury theorem, tracking from accuracy 0.507 at this
 \(n\). What separates the measured world from both is not its first or
 second moments but its shape: the coexistence of a nearly indifferent
 majority with a concentrated high-stakes minority.
+
+\subsection{Voting rules, with the status quo on the ballot}
+\label{sec:rules}
+
+Every election above chooses between the two policies, and the option
+the welfare metric ranks first --- the status quo --- is not votable.
+That ballot also degenerates the voting-rules question: with two
+options, a sincere ballot-normalized score ballot awards the maximum to
+the preferred policy and the minimum to the other, which \emph{is}
+plurality, just as instant runoff already coincides with it
+(Section~\ref{sec:model}). Comparing rules requires a third option, and
+the natural third option is the welfare optimum itself. This subsection
+reruns the noise sweep on the three-option ballot \{status quo, \(A\),
+\(B\)\} for every implemented rule: plurality, approval under both
+threshold conventions, 0--5 score under two normalizations, STAR, and
+instant runoff. Grading is unchanged (isoelastic, \(\eta = 1\));
+mistakes are priced as regret in dollars of equally-distributed-equivalent
+(EDE) income per household; a rule that elects no option leaves current
+law in place. Table~\ref{tab:rules} reports 240 elections of 10{,}001
+voters per cell.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Rule & \(\sigma = \$0\) & \$1{,}000 & \$3{,}000 & \$10{,}000 & \$30{,}000 \\
+\midrule
+Plurality & 1.000 & 0.979 & 0.642 & 0.504 & 0.367 \\
+Approval (strict \(>\)) & 0.000 & 1.000 & 0.883 & 0.600 & 0.417 \\
+Approval (inclusive \(\ge\)) & 1.000 & 1.000 & 0.858 & 0.588 & 0.383 \\
+Score 0--5, ballot-normalized & 1.000 & 1.000 & 0.821 & 0.558 & 0.408 \\
+Score, stakes-proportional & 1.000 & 1.000 & 0.858 & 0.517 & 0.392 \\
+STAR 0--5 & 1.000 & 1.000 & 0.796 & 0.558 & 0.342 \\
+Instant runoff & 1.000 & 1.000 & 0.779 & 0.571 & 0.371 \\
+\bottomrule
+\end{tabular}
+\caption{Probability of enacting the welfare-optimal option (the status
+quo) on the three-option ballot, by rule and own-stake noise \(\sigma\);
+240 elections of 10{,}001 voters per cell. In regret terms, at
+\(\sigma = 0\) strict approval loses \$169.29 of EDE income per
+household (every election enacts Policy A) while every other rule loses
+\$0; at \(\sigma = \$3{,}000\) strict approval's mean regret is \$19.75
+against plurality's \$60.66.}
+\label{tab:rules}
+\end{table}
+
+The knife-edge was ballot design, not aggregation failure. With the
+status quo votable, the trivial-stakes mass votes for the option that
+charges it nothing, and plurality tracks perfectly at \(\sigma = 0\);
+the perfect-information failure of Section~\ref{sec:knife} came from
+forcing that mass to choose between two levies it disliked. Every rule
+tested tracks perfectly at \(\sigma = 0\) on the three-option ballot,
+with one exception, and the exception prices a ballot instruction
+rather than an aggregation formula. Under the strict approval
+convention --- approve options perceived \emph{better than} the status
+quo --- the status quo itself can never be approved, so the credit
+program's beneficiaries elect it unopposed: tracking 0\%, mean regret
+\$169.29 per household, the worst cell in the table, while the
+inclusive convention (approve options at least as good) tracks 100\%.
+In an electorate where three in four voters are near-indifferent, the
+threshold instruction decides the perfect-information outcome; away
+from \(\sigma = 0\), noise breaks the exact ties and the two
+conventions converge.
+
+Noise then reverses the ordering, and approval leads. From
+\(\sigma = \$3{,}000\) up, strict approval is the most noise-robust
+rule --- the threshold that broke it at perfect information now filters
+ballots whose perceived values are all noise below zero --- while
+plurality degrades worst. The cardinal rules sit between, and
+stakes-proportional scoring, with score magnitude carrying dollar
+intensity in the referendum-like aggregation, buys no reliable
+advantage over ballot-normalized scoring on this electorate.
+
+No rule dominates: plurality is exact at perfect information and worst
+under noise, strict approval the reverse. All ballots are sincere;
+strategic exaggeration would push the cardinal rules toward approval,
+their bracketing case. And every gap between rules stays smaller than
+what the agenda decides --- which options reach the ballot, the choice
+Section~\ref{sec:strategic} makes endogenous, moves more welfare than
+how the ballot aggregates them.
 
 \section{Endogenous platforms: elections as selectors}\label{sec:strategic}
 
@@ -597,6 +714,129 @@ Table~\ref{tab:discipline}.}
 \label{fig:discipline}
 \end{figure}
 
+\section{A continuous axis: ideal outcomes and beliefs about policy}
+\label{sec:axis}
+
+Everything so far asks whether elections rank two policies correctly.
+This section changes the object. The policy is a continuous dial;
+voters care about the outcome the dial produces, not the dial; and what
+they know is a belief about how far the dial moves the outcome. Demand
+for policy is then derived, not primitive --- and wrong beliefs distort
+it in a specific, measurable direction.
+
+\paragraph{The dial.} A position \(t \in [0, 1]\) raises every federal
+income tax bracket rate by \(10t\) percentage points and returns the
+revenue as an equal per-adult transfer --- the
+linear-tax-plus-demogrant axis of the redistribution literature, priced
+on measured household incidence through the actual tax code. A
+dedicated engine-built artifact (three simulations) carries it: at
+\(t = 1\) the engine scores \$1{,}286.6B of revenue, a \$4{,}809
+transfer per adult per year, and 68.6\% of households gaining net
+(Table~\ref{tab:axis}); the Gini falls from 0.4541 to 0.4135 and EDE
+income rises \$7{,}661 per household. Gross incidence interpolates
+linearly in \(t\) from the endpoint run, and a midpoint engine run
+prices the approximation: 0.31\% of totals, 97.4\% of households within
+\$1, mean absolute error \$16.27. Mean net stake runs from
+\(+\$7{,}777\) in the bottom income decile to \(-\$35{,}671\) in the
+top and crosses in the eighth --- household size, not a single
+break-even income, sets where the transfers stop covering the rate
+increases.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Position & Gini & \(\Delta\)EDE per household & Transfer per adult \\
+\midrule
+\(t = 0\) (current law) & 0.4541 & --- & --- \\
+\(t = 0.5\) & 0.4336 & \(+\$4{,}211\) & \$2{,}404 \\
+\(t = 1\) & 0.4135 & \(+\$7{,}661\) & \$4{,}809 \\
+\bottomrule
+\end{tabular}
+\caption{Measured outcomes along the redistribution axis. Position
+\(t\) raises every federal bracket rate by \(10t\) points and returns
+the revenue as an equal per-adult transfer; at \(t = 1\) the levy
+raises \$1{,}286.6B and 68.6\% of households gain. A midpoint engine
+run bounds the linear interpolation of gross incidence at 0.31\% of
+totals, with 97.4\% of households within \$1.}
+\label{tab:axis}
+\end{table}
+
+\paragraph{Preferences over outcomes, beliefs about the mapping.} A
+voter holds an ideal Gini \(g^*_i\), a price \(k_i\) in dollars per
+Gini point on missing it, and a selfish weight \(s_i\), on the same
+dollar scale as the rest of the paper:
+\begin{equation}
+U_i(t) \;=\; s_i \cdot \widehat{\mathrm{own}}_i(t)
+\;-\; (1 - s_i) \cdot k_i \cdot 100 \cdot
+\bigl|\hat G_i(t) - g^*_i\bigr|.
+\label{eq:axisutility}
+\end{equation}
+Beliefs enter as a slope on the outcome mapping, not as noise on each
+option:
+\begin{equation}
+\hat G_i(t) \;=\; G(0) \;+\; \lambda_i \bigl(G(t) - G(0)\bigr),
+\label{eq:axisbelief}
+\end{equation}
+with \(\lambda_i = 1\) correct and \(\lambda_i < 1\) understating the
+policy's reach. Own-stake perception works the same way: the perceived
+own stake is \(t \cdot (\mathrm{own}_i + \varepsilon_i)\) with one draw
+per voter, so a voter's perceived utility curve stays coherent across
+the whole continuum instead of jumping between neighboring positions as
+per-option noise would force.
+
+\paragraph{Wrong beliefs inflate demand reciprocally.} A voter's belief
+reports the target only once the true Gini reaches
+\(G(0) + (g^*_i - G(0))/\lambda_i\), and the measured Gini curve is
+nearly linear in \(t\) (grid steps from \(-0.00104\) at the bottom of
+the axis to \(-0.00099\) at the top), so demanded position scales as
+\(1/\lambda\) until the axis saturates. For the target halfway to the
+axis's floor, demanded \(t\) runs 0.250 at \(\lambda = 2\), 0.325 at
+1.5, 0.500 at 1, 0.650 at 0.75, and the entire axis at
+\(\lambda \le 0.5\). A voter who wants half the achievable inequality
+reduction and believes policy half as effective as it is demands
+everything the axis offers --- the maximalist's platform, held for the
+opposite reason. Read as measurement, stated policy demand identifies
+values only jointly with beliefs; ``what policy do you support?''
+separates the two only if both are elicited.
+
+\paragraph{Elections aggregate beliefs by median, not mean.} Give the
+electorate one shared goal --- a target Gini of 0.4338, half the axis's
+reach --- and split it between correct voters (\(\lambda = 1\)) and
+attenuated ones (\(\lambda = 0.25\)), with two office-seeking
+candidates playing the position game. Sweeping the attenuated share: at
+0--0.4 the equilibrium enacts exactly 0.500, what a fully correct
+electorate enacts, even though at 0.4 the electorate's mean belief
+understates the policy's reach by 30\%; at 0.5 it enacts 0.750; from
+0.6 on, the maximum. Independent misperception canceled on the
+two-option ballot of Section~\ref{sec:knife}; on a continuum the median
+belief rules and the mean is irrelevant --- same electorate, same
+perception machinery, opposite aggregation. The equilibria themselves
+are exactly Downsian: across all 30 (target, belief) cells the enacted
+position equals the electorate's median ideal to grid precision
+\citep{downs1957}.
+
+\paragraph{Self-interest wants the corner.} A purely self-interested
+electorate enacts \(t = 1\) at every own-stake noise level tested
+(\$0, \$1{,}000, \$10{,}000): 68.6\% of households gain from the full
+program, so the median voter does, and one noise draw on a perceived
+gradient leaves most voters' signs in place. This is the demand side of
+\citet{meltzer1981} running on measured incidence rather than a
+stylized income distribution. Moderation on this axis comes from values
+(an ideal short of maximum equality) or from beliefs (an overestimate
+of policy's reach), not from self-interest.
+
+The engine holds labor supply, avoidance, and growth fixed, so more
+redistribution always raises EDE income and the inequality-averse
+planner's optimum is the corner \(t = 1\); every interior result above
+comes from voters' ideal points, not from an efficiency cost. This
+section models demand formation, not optimal taxation. The target,
+belief-slope, and price distributions are labeled assumptions --- the
+survey targets --- and the belief slope is a single elicitable number:
+what a respondent expects a ten-point rate rise returned as an equal
+check to do to inequality.
+
 \section{Robustness and limitations}\label{sec:limits}
 
 The welfare ranking is stable across \(\eta \in \{0.5, 1, 2\}\) and under
@@ -623,6 +863,19 @@ EDE change of the electorate actually voting; and the societal noise,
 bias, and \(\eta\) distributions are labeled assumptions with nothing
 measured behind them --- the layer exists so that survey estimates of
 sociotropic perception can drop in beside the own-stake ones.
+
+Ballots are sincere under every rule of Section~\ref{sec:rules}: score
+voters spend the full scale or report clipped dollar values, approval
+voters apply a fixed threshold, and nobody strategizes; strategic
+exaggeration would push the cardinal rules toward approval, their
+bracketing case. The rules comparison also fixes one agenda --- the
+two measured programs plus the status quo --- and rule performance
+under other agendas is untested. The axis of Section~\ref{sec:axis}
+holds behavior fixed, so more redistribution always raises EDE income,
+the inequality-averse planner's optimum sits at the corner, and every
+interior result there comes from voters' ideal points rather than an
+efficiency cost; its target, belief-slope, and price distributions are
+labeled assumptions awaiting the same survey.
 
 The binding limitation is that perception is assumed. The linear-Gaussian
 family is exactly what a survey regression of perceived on true impacts
@@ -652,13 +905,25 @@ preferences, not information: a few percent of utility weight on society
 cures the knife-edge, and a tenth of the electorate voting an informed
 societal signal disciplines purely selfish candidates at any noise
 level, leaving value pluralism --- informed voters with different
-inequality aversions --- as the distortion no measurement closes. The
-mechanisms are old; the denominations are new. Whether real electorates
-sit on the tracking side of these numbers --- how accurately voters see
-their own stakes, how much weight they place on society's, and through
-which welfare lens --- is now a measurement question.
+inequality aversions --- as the distortion no measurement closes.
+The wider objects sharpen both points. With the status quo votable,
+every rule tested tracks perfectly at perfect information --- the
+agenda, not the aggregation, made the knife-edge --- yet a one-word
+approval convention swings that same outcome from 0\% to 100\%, noise
+reverses the rule ordering, and no gap between rules approaches what
+the ballot's option set decides. On a continuous redistribution axis
+the aggregation itself flips: independent misperception stops
+canceling, the median belief sets the outcome, demand for policy
+inflates with the reciprocal of belief in its reach, and pure
+self-interest rides measured incidence to the corner at every noise
+level; moderation falls to values and beliefs. The mechanisms are old;
+the denominations are new. Whether real electorates sit on the
+tracking side of these numbers --- how accurately voters see their own
+stakes, how far they believe policy moves the outcomes they value, how
+much weight they place on society's, and through which welfare lens ---
+is now a measurement question.
 
-\begin{thebibliography}{17}
+\begin{thebibliography}{18}
 \itemsep2pt
 
 \bibitem[Atkinson(1970)]{atkinson1970}
@@ -722,6 +987,11 @@ correlated votes. \emph{American Journal of Political Science}, 36(3),
 Lindbeck, A., and Weibull, J.~W. (1987). Balanced-budget redistribution as
 the outcome of political competition. \emph{Public Choice}, 52(3),
 273--297.
+
+\bibitem[Meltzer and Richard(1981)]{meltzer1981}
+Meltzer, A.~H., and Richard, S.~F. (1981). A rational theory of the
+size of government. \emph{Journal of Political Economy}, 89(5),
+914--927.
 
 \bibitem[Osborne and Slivinski(1996)]{osborne1996}
 Osborne, M.~J., and Slivinski, A. (1996). A model of political
