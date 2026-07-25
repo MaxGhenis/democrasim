@@ -53,7 +53,6 @@ import pandas as pd
 
 from democrasim.electorate import Electorate, FloatArray
 from democrasim.perception import _phi
-from democrasim.strategic import _multinomial_win
 from democrasim.welfare import Isoelastic, WelfareMetric, apply_financing
 
 #: Committed artifact carrying the axis endpoint.
@@ -262,22 +261,47 @@ class OutcomeType:
 EGALITARIAN = OutcomeType()
 
 
+def _win_from_shares(
+    p_first: FloatArray, p_second: FloatArray, n_voters: int | None
+) -> FloatArray:
+    """P(the first option wins) from expected vote shares, elementwise.
+
+    Takes both sides explicitly rather than deriving one by subtraction:
+    when every voter is exactly indifferent both shares are exactly zero,
+    whereas ``1 - abstain`` leaves a rounding residue that the sqrt(n)
+    multinomial scaling amplifies into a visible bias.
+    """
+    active = p_first + p_second
+    gap = p_first - p_second
+    step = np.where(gap > 0, 1.0, np.where(gap < 0, 0.0, 0.5))
+    if n_voters is None:
+        out = step
+    else:
+        variance = n_voters * (active - gap**2)
+        positive = variance > 0
+        with np.errstate(divide="ignore", invalid="ignore"):
+            z = np.where(positive, n_voters * gap / np.sqrt(variance), 0.0)
+        out = np.where(positive, _phi(z), step)
+    return np.where(active <= 0, 0.5, out)
+
+
 def _vote_shares(
     axis: RedistributionAxis,
     types: tuple[OutcomeType, ...],
     left: int,
     right: int,
 ) -> tuple[float, float]:
-    """Expected (prefer-left, indifferent) shares between two positions.
+    """Expected (prefer-left, prefer-right) shares between two positions.
 
     Each voter's utility difference is normal — the own-stake gradient
     error is the only random term and it enters linearly — so the mixture
-    closes in the same probit form the rest of the package uses.
+    closes in the same probit form the rest of the package uses. Voters
+    who are exactly indifferent appear in neither share.
     """
     positions = axis.positions
     gap = float(positions[left] - positions[right])
     share_weights = axis.weights / axis.weights.sum()
-    prefer, indifferent = 0.0, 0.0
+    prefer, against = 0.0, 0.0
     for voter_type in types:
         outcome = voter_type.outcome_value(axis)
         societal = (1.0 - voter_type.selfish_weight) * float(
@@ -292,10 +316,11 @@ def _vote_shares(
             sd = 0.0
         if sd > 0:
             prefer += voter_type.share * float(share_weights @ _phi(mean / sd))
+            against += voter_type.share * float(share_weights @ _phi(-mean / sd))
         else:
             prefer += voter_type.share * float(share_weights @ (mean > 0))
-            indifferent += voter_type.share * float(share_weights @ (mean == 0))
-    return prefer, indifferent
+            against += voter_type.share * float(share_weights @ (mean < 0))
+    return prefer, against
 
 
 def win_probability_table(
@@ -307,13 +332,13 @@ def win_probability_table(
     """P(the row position beats the column position), all pairs."""
     n = len(axis.positions)
     prefer = np.empty((n, n))
-    indifferent = np.empty((n, n))
+    against = np.empty((n, n))
     for i in range(n):
         for j in range(i, n):
             p, q = _vote_shares(axis, types, i, j)
-            prefer[i, j], indifferent[i, j] = p, q
-            prefer[j, i], indifferent[j, i] = 1.0 - p - q, q
-    return _multinomial_win(prefer, indifferent, n_voters)
+            prefer[i, j], against[i, j] = p, q
+            prefer[j, i], against[j, i] = q, p
+    return _win_from_shares(prefer, against, n_voters)
 
 
 def median_ideal_position(

@@ -24,3 +24,7 @@ data/intermediate/
 
 # Logs
 *.log
+
+# Engine build intermediates (regenerate with the build scripts)
+data/intermediate/
+data/intermediate_axis/
