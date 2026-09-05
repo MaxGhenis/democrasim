@@ -2,8 +2,11 @@
 
 Every rule consumes the same inputs — an ``(n_voters, n_policies)`` matrix of
 *perceived* household impacts and a vote-mass weight per voter — so rules are
-interchangeable in any experiment. Plurality is the headline rule; approval
-and instant-runoff exist as the comparison surface for mechanism questions.
+interchangeable in any experiment. Plurality is the headline rule; approval,
+score, STAR, and instant-runoff are the comparison surface for mechanism
+questions. Cardinal rules read the dollar denomination directly: a score
+ballot is a normalization of perceived dollars, which is exactly the
+quantity this model measures.
 
 Conventions:
 
@@ -104,6 +107,110 @@ class Approval:
             winner=_winner(counts),
             shares=counts / total_mass,
             turnout=float(weights[approvals.any(axis=1)].sum() / total_mass),
+        )
+
+
+@dataclass(frozen=True)
+class Score:
+    """Sincere score ballots built from perceived dollar utilities.
+
+    Args:
+        normalize: How dollars become scores in ``[0, 1]``.
+            ``"ballot"`` min–max normalizes each voter's perceived values
+            over the options on the ballot — the sincere-score convention
+            of Bayesian-regret simulations; every participating voter
+            spends the full scale. ``"stakes"`` maps dollars linearly to
+            scores around the status quo (0 dollars scores 0.5, ±``cap``
+            saturates), so score magnitude carries stake intensity and is
+            comparable across voters.
+        cap: Saturation point in dollars for the ``"stakes"`` map.
+        levels: Optional integer ballot resolution — ``5`` rounds scores to
+            the 0–5 marks of a real score ballot; ``None`` keeps them
+            continuous.
+
+    A voter whose perceived values are all exactly equal casts no ballot
+    (indifference abstains, matching the plurality convention). ``shares``
+    reports mean scores over total vote mass, so they need not sum to 1.
+    """
+
+    normalize: str = "ballot"
+    cap: float = 1_000.0
+    levels: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.normalize not in ("ballot", "stakes"):
+            raise ValueError("normalize must be 'ballot' or 'stakes'")
+        if self.cap <= 0:
+            raise ValueError("cap must be positive")
+        if self.levels is not None and self.levels < 1:
+            raise ValueError("levels must be a positive integer")
+
+    def _scores(self, perceived: FloatArray) -> tuple[FloatArray, np.ndarray]:
+        low = perceived.min(axis=1, keepdims=True)
+        spread = perceived.max(axis=1, keepdims=True) - low
+        participating = spread[:, 0] > 0
+        if self.normalize == "ballot":
+            scores = np.divide(
+                perceived - low, spread, out=np.zeros_like(perceived), where=spread > 0
+            )
+        else:
+            scores = np.clip(perceived, -self.cap, self.cap) / (2 * self.cap) + 0.5
+        if self.levels is not None:
+            scores = np.round(scores * self.levels) / self.levels
+        return scores, participating
+
+    def tally(self, perceived: FloatArray, weights: FloatArray) -> Tally:
+        scores, participating = self._scores(perceived)
+        counts = scores[participating].T @ weights[participating]
+        total_mass = weights.sum()
+        return Tally(
+            winner=_winner(counts),
+            shares=counts / total_mass,
+            turnout=float(weights[participating].sum() / total_mass),
+        )
+
+
+@dataclass(frozen=True)
+class STAR:
+    """Score-then-automatic-runoff on ballot-normalized sincere scores.
+
+    The score round uses 0–``levels`` integer ballots (the sincere,
+    full-scale convention); the two highest-scoring options advance, and
+    the runoff gives each ballot's full weight to whichever finalist it
+    scored strictly higher — equal-scored ballots sit the runoff out, and
+    an exactly tied runoff falls back to the score-round leader. With two
+    options on the ballot the runoff is the whole election. ``shares``
+    reports the score round (mean score per option over total mass);
+    ``turnout`` counts ballots cast in the score round.
+    """
+
+    levels: int = 5
+
+    def __post_init__(self) -> None:
+        if self.levels < 1:
+            raise ValueError("levels must be a positive integer")
+
+    def tally(self, perceived: FloatArray, weights: FloatArray) -> Tally:
+        scores, participating = Score(levels=self.levels)._scores(perceived)
+        active = scores[participating]
+        active_weights = weights[participating]
+        totals = active.T @ active_weights
+        total_mass = weights.sum()
+        shares = totals / (total_mass or 1.0)
+        if active.shape[0] == 0 or totals.sum() <= 0:
+            return Tally(winner=NO_WINNER, shares=shares, turnout=0.0)
+        order = np.argsort(-totals, kind="stable")
+        first, second = int(order[0]), int(order[1])
+        prefer_first = active[:, first] > active[:, second]
+        prefer_second = active[:, second] > active[:, first]
+        first_votes = float(active_weights[prefer_first].sum())
+        second_votes = float(active_weights[prefer_second].sum())
+        # Majority wins the runoff; an exact tie keeps the score leader.
+        winner = second if second_votes > first_votes else first
+        return Tally(
+            winner=winner,
+            shares=shares,
+            turnout=float(active_weights.sum() / total_mass),
         )
 
 

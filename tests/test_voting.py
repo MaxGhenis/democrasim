@@ -1,7 +1,15 @@
 import numpy as np
 import pytest
 
-from democrasim import NO_WINNER, Approval, InstantRunoff, Plurality
+from democrasim import (
+    NO_WINNER,
+    STAR,
+    Approval,
+    InstantRunoff,
+    Plurality,
+    Score,
+    VotingRule,
+)
 
 
 class TestPlurality:
@@ -121,3 +129,92 @@ class TestInstantRunoff:
         tally = InstantRunoff().tally(perceived, np.ones(4))
         assert tally.winner == 0
         assert tally.turnout == 1.0
+
+
+class TestScore:
+    def test_ballot_normalized_two_options_matches_plurality(self):
+        """With two options, sincere ballot-normalized score IS plurality:
+        every participating ballot scores the preferred option 1, the other
+        0."""
+        rng = np.random.default_rng(5)
+        perceived = rng.normal(0.0, 500.0, size=(40, 2))
+        weights = rng.uniform(0.5, 2.0, size=40)
+        score = Score().tally(perceived, weights)
+        plurality = Plurality().tally(perceived, weights)
+        assert score.winner == plurality.winner
+        assert score.turnout == pytest.approx(plurality.turnout)
+        np.testing.assert_allclose(score.shares, plurality.shares)
+
+    def test_ballot_normalized_hand_check_three_options(self):
+        perceived = np.array([[0.0, 100.0, 50.0], [0.0, -80.0, -40.0]])
+        weights = np.array([1.0, 1.0])
+        tally = Score().tally(perceived, weights)
+        # Voter 1: scores (0, 1, .5); voter 2: (1, 0, .5) -> totals (1, 1, 1)
+        np.testing.assert_allclose(tally.shares, [0.5, 0.5, 0.5])
+        assert tally.winner == 0  # exact tie resolves to the lowest index
+        assert tally.turnout == 1.0
+
+    def test_indifferent_voters_abstain(self):
+        perceived = np.array([[0.0, 0.0, 0.0], [0.0, 10.0, 5.0]])
+        tally = Score().tally(perceived, np.array([9.0, 1.0]))
+        assert tally.turnout == pytest.approx(0.1)
+        assert tally.winner == 1
+
+    def test_stakes_normalization_centers_and_saturates(self):
+        perceived = np.array([[0.0, 500.0, -2_000.0]])
+        tally = Score(normalize="stakes", cap=1_000.0).tally(perceived, np.ones(1))
+        np.testing.assert_allclose(tally.shares, [0.5, 0.75, 0.0])
+        assert tally.winner == 1
+
+    def test_levels_round_to_ballot_marks(self):
+        perceived = np.array([[0.0, 61.0, 100.0]])
+        tally = Score(levels=5).tally(perceived, np.ones(1))
+        np.testing.assert_allclose(tally.shares, [0.0, 0.6, 1.0])
+
+    def test_validation(self):
+        with pytest.raises(ValueError):
+            Score(normalize="range")
+        with pytest.raises(ValueError):
+            Score(cap=0.0)
+        with pytest.raises(ValueError):
+            Score(levels=0)
+
+    def test_satisfies_the_protocol(self):
+        assert isinstance(Score(), VotingRule)
+        assert isinstance(STAR(), VotingRule)
+
+
+class TestSTAR:
+    def test_runoff_can_overturn_the_score_leader(self):
+        """Two mild fans of option 1 lose the runoff to three voters who
+        narrowly prefer option 0 - scores pick the finalists, majorities
+        pick between them."""
+        perceived = np.array(
+            [[100.0, 90.0, 0.0]] * 3 + [[0.0, 100.0, 20.0]] * 2,
+        )
+        tally = STAR(levels=5).tally(perceived, np.ones(5))
+        # Score totals (0-1 scale): option 1 leads with 4.4 (3 x 0.8 + 2 x 1)
+        # over option 0's 3.0 - but the runoff between them splits 3-2 for
+        # option 0, whose supporters scored it strictly higher.
+        assert tally.winner == 0
+
+    def test_two_options_is_a_majority_vote(self):
+        perceived = np.array([[10.0, 0.0]] * 3 + [[0.0, 500.0]] * 2)
+        tally = STAR().tally(perceived, np.ones(5))
+        assert tally.winner == 0
+        assert tally.turnout == 1.0
+
+    def test_runoff_tie_falls_back_to_the_score_leader(self):
+        perceived = np.array([[100.0, 60.0, 0.0], [0.0, 60.0, 100.0]])
+        tally = STAR(levels=5).tally(perceived, np.ones(2))
+        # Score totals: option 1 leads (1.2 vs 1.0 vs 1.0); finalists are
+        # options 1 and 0, and their runoff ties 1-1 - the tie falls back
+        # to the score leader.
+        assert tally.winner == 1
+        assert tally.turnout == 1.0
+
+    def test_indifferent_ballots_stay_home(self):
+        perceived = np.array([[5.0, 5.0, 5.0], [0.0, 10.0, 20.0]])
+        tally = STAR().tally(perceived, np.array([100.0, 1.0]))
+        assert tally.winner == 2
+        assert tally.turnout == pytest.approx(1.0 / 101.0)

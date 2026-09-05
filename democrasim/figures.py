@@ -322,6 +322,230 @@ def rule_comparison(sweeps: Sequence[pd.DataFrame], names: Sequence[str]) -> plt
         return fig
 
 
+def strategic_positions(frame: pd.DataFrame) -> plt.Figure:
+    """Equilibrium platform intensity vs perception noise, by selfish weight.
+
+    Expects the strategic_equilibria frame: for each (selfish_weight, sigma),
+    the mean enacted Policy-A intensity across pure Nash equilibria and
+    candidate 1's iterated-best-response proposal.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        weights = sorted(frame["selfish_weight"].unique())
+        # Coincident series (identical curves for different weights) get the
+        # wide-translucent-underlay treatment so both stay visible.
+        solid = (
+            {"linewidth": 2.0},
+            {"linewidth": 4.5, "alpha": 0.35},
+            {"linewidth": 2.0},
+        )
+        for j, weight in enumerate(weights):
+            sub = frame[frame["selfish_weight"] == weight].sort_values("sigma")
+            positive = sub[sub["sigma"] > 0]
+            ax.plot(
+                positive["sigma"],
+                positive["mean_enacted_alpha"],
+                color=SERIES[j],
+                label=f"selfish weight {weight:g} (enacted)",
+                **solid[j % len(solid)],
+            )
+            ax.plot(
+                positive["sigma"],
+                positive["ibr_position_1_alpha"],
+                color=SERIES[j],
+                linewidth=1.2,
+                linestyle=(0, (3, 3)),
+                label=f"selfish weight {weight:g} (proposal)",
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel("perception noise σ, dollars per year (log scale; σ=0 omitted)")
+        ax.set_ylabel("Policy-A intensity α")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Noise relaxes electoral discipline on self-serving platforms")
+        ax.legend(loc="upper left", fontsize=8)
+        return fig
+
+
+def axis_map(frame: pd.DataFrame) -> plt.Figure:
+    """Inequality along the measured redistribution axis.
+
+    Expects the axis_map frame (one row per position) with ``position`` and
+    ``gini``. The curve's flattening is the measured fact behind
+    single-peaked demand: equal steps of policy buy less equality as the
+    axis runs out.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        ax.plot(frame["position"], frame["gini"], color=SERIES[0])
+        ax.set_xlabel(
+            "position t: every bracket rate +t x 10 points, revenue rebated per adult"
+        )
+        ax.set_ylabel("Gini of household net income")
+        ax.set_title("What the dial does to inequality")
+        first, last = frame.iloc[0], frame.iloc[-1]
+        ax.annotate(
+            f"current law {first['gini']:.3f}",
+            (first["position"], first["gini"]),
+            textcoords="offset points",
+            xytext=(8, -2),
+            fontsize=8.5,
+            color=INK_SECONDARY,
+        )
+        ax.annotate(
+            f"{last['gini']:.3f} at t=1\n"
+            f"(${last['transfer_per_adult']:,.0f} per adult)",
+            (last["position"], last["gini"]),
+            textcoords="offset points",
+            xytext=(-12, 28),
+            ha="right",
+            fontsize=8.5,
+            color=INK_SECONDARY,
+        )
+        return fig
+
+
+def axis_demand(frame: pd.DataFrame) -> plt.Figure:
+    """Demanded position against the voter's belief about policy reach.
+
+    Expects the axis_demand frame: ``belief_slope``, ``demanded_position``,
+    and ``target_name``. Attenuated beliefs (left of 1.0) inflate demand
+    until the axis saturates.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.2))
+        for j, name in enumerate(dict.fromkeys(frame["target_name"])):
+            sub = frame[frame["target_name"] == name].sort_values("belief_slope")
+            ax.plot(
+                sub["belief_slope"],
+                sub["demanded_position"],
+                color=SERIES[j % len(SERIES)],
+                marker="o",
+                markersize=3.5,
+                label=(
+                    "target: "
+                    f"{name.replace('_of_reach', '').replace('_', ' ')} of reach"
+                ),
+            )
+        ax.axvline(1.0, color=BASELINE, linewidth=1.0, linestyle=(0, (4, 4)))
+        ax.text(
+            1.0,
+            1.02,
+            " correct beliefs",
+            fontsize=8.5,
+            color=INK_MUTED,
+            va="bottom",
+        )
+        ax.set_xlabel("believed policy effect, as a multiple of the truth")
+        ax.set_ylabel("policy intensity demanded (t)")
+        ax.set_ylim(-0.04, 1.1)
+        ax.set_title("Underestimating a policy's reach inflates the policy demanded")
+        ax.legend(loc="upper right", fontsize=8)
+        return fig
+
+
+def rules_comparison(frame: pd.DataFrame) -> plt.Figure:
+    """Welfare tracking vs noise per voting rule, three-option ballot.
+
+    Expects the rules_comparison frame (one row per rule × σ) with
+    ``p_tracked`` and Wilson bounds. σ = 0 is omitted by the log axis; the
+    results table carries it.
+    """
+    labels = {
+        "plurality": "plurality",
+        "approval": "approval",
+        "score_ballot_0_5": "score 0–5 (ballot-normalized)",
+        "score_stakes": "score (stakes-proportional)",
+        "star_0_5": "STAR 0–5",
+        "instant_runoff": "instant runoff",
+    }
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.2))
+        for j, (name, label) in enumerate(labels.items()):
+            sub = frame[(frame["rule"] == name) & (frame["sigma"] > 0)].sort_values(
+                "sigma"
+            )
+            if sub.empty:
+                continue
+            _tracking_band(ax, sub, sub["sigma"].to_numpy(), j % len(SERIES))
+            ax.plot(
+                sub["sigma"],
+                sub["p_tracked"],
+                color=SERIES[j % len(SERIES)],
+                label=label,
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel("perception noise σ, dollars per year (log scale; σ=0 omitted)")
+        ax.set_ylabel("share of elections enacting the\nwelfare-optimal option")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Voting rules on a ballot that includes the status quo")
+        ax.legend(loc="lower left", fontsize=8)
+        return fig
+
+
+def mixed_motive_tracking(frame: pd.DataFrame) -> plt.Figure:
+    """Analytic tracking vs own-stake noise, by the voters' selfish weight.
+
+    Expects a long frame with ``selfish_weight``, ``noise_sd`` and
+    ``p_tracked`` columns (informed societal component, σ_soc = 0). At most
+    six weights are drawn (one per palette hue) from the fixed display set;
+    probe weights such as 0.98 stay in the CSV. The fully sociotropic
+    series is constant at 1, so it draws as the wide translucent underlay.
+    """
+    display = [1.0, 0.9, 0.75, 0.5, 0.25, 0.0]
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        weights = [w for w in display if w in set(frame["selfish_weight"])]
+        for j, weight in enumerate(weights):
+            sub = frame[
+                (frame["selfish_weight"] == weight) & (frame["noise_sd"] > 0)
+            ].sort_values("noise_sd")
+            style = {"linewidth": 4.5, "alpha": 0.35} if weight == 0.0 else {}
+            ax.plot(
+                sub["noise_sd"],
+                sub["p_tracked"],
+                color=SERIES[j % len(SERIES)],
+                label=f"{weight:g}",
+                **style,
+            )
+        ax.set_xscale("log")
+        ax.set_xlabel(
+            "own-stake perception noise σ, dollars per year (log scale; σ=0 omitted)"
+        )
+        ax.set_ylabel("P(welfare-optimal policy wins), analytic")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("Societal motives substitute for accurate self-perception")
+        ax.legend(loc="lower center", ncols=3, title="voters' selfish weight")
+        return fig
+
+
+def strategic_discipline(frame: pd.DataFrame) -> plt.Figure:
+    """Equilibrium platform intensity vs the sociotropic voter share.
+
+    Expects the heterogeneous-electorate equilibrium frame: purely selfish
+    candidates against an electorate mixing noisy self-interested voters
+    with informed sociotropic ones, one series per own-stake noise level.
+    """
+    with plt.rc_context(_RC):
+        fig, ax = _new_axes((7.0, 4.0))
+        sigmas = sorted(frame["sigma"].unique())
+        for j, sigma in enumerate(sigmas):
+            sub = frame[frame["sigma"] == sigma].sort_values("sociotropic_share")
+            ax.plot(
+                sub["sociotropic_share"],
+                sub["mean_enacted_alpha"],
+                color=SERIES[j % len(SERIES)],
+                marker="o",
+                markersize=4,
+                label=f"σ = ${sigma:,.0f}",
+            )
+        ax.set_xlabel("share of voters who are informed and sociotropic")
+        ax.set_ylabel("enacted Policy-A intensity α")
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_title("A sociotropic minority restores platform discipline")
+        ax.legend(loc="upper right", title="own-stake noise")
+        return fig
+
+
 def save_figures(figures: dict[str, plt.Figure], directory: Path | str) -> list[Path]:
     """Write each figure as PNG into ``directory``; returns paths."""
     directory = Path(directory)
@@ -337,10 +561,14 @@ def save_figures(figures: dict[str, plt.Figure], directory: Path | str) -> list[
 
 __all__: Iterable[str] = [
     "accuracy_curve",
+    "axis_demand",
+    "axis_map",
     "bias_curve",
     "impact_distribution",
     "margin_distribution",
     "n_sensitivity",
     "rule_comparison",
+    "rules_comparison",
     "save_figures",
+    "strategic_positions",
 ]

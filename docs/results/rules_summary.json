@@ -1,0 +1,31 @@
+{
+  "provenance": {
+    "generator": "scripts/rules_experiments.py",
+    "democrasim_version": "0.2.0",
+    "artifact": "us_2026_measured",
+    "artifact_sha256": "5cd1499d0d5dfecdc3779c443886f86608ff83720d1d88da0d55a55c8631c10c",
+    "n_elections": 240,
+    "n_voters": 10001,
+    "rules": {
+      "plurality": "Plurality(abstain_below=0.0)",
+      "approval": "Approval(threshold=0.0)",
+      "score_ballot_0_5": "Score(normalize='ballot', cap=1000.0, levels=5)",
+      "score_stakes": "Score(normalize='stakes', cap=1000.0, levels=None)",
+      "star_0_5": "STAR(levels=5)",
+      "instant_runoff": "InstantRunoff(indifferent_abstain=True)",
+      "approval_inclusive": "Approval(threshold=-1e-09)"
+    }
+  },
+  "ballot": [
+    "Status quo",
+    "Policy A",
+    "Policy B"
+  ],
+  "welfare_metric": "Isoelastic(eta=1)",
+  "ede_dollars_per_household": [
+    0.0,
+    -169.2877,
+    -379.0578
+  ],
+  "no_winner_grades_as": "Status quo"
+}

@@ -26,6 +26,13 @@ behavioral layers labeled:
   how each policy's cost is financed, the welfare metric, the electorate
   size, and who turns out are explicit, swappable model choices — the
   findings note reports how the results move under each.
+- **Preferences are a labeled layer too.** The baseline voter maximizes
+  perceived own dollars; `MixedMotivePerception` gives any mixture of
+  `VoterType`s their own welfare function — a selfish weight on the
+  household's stake and a societal weight on the policy's
+  equally-distributed-equivalent income change, dollars either way, with
+  each type's own inequality aversion and information quality
+  ([docs/heterogeneity.md](docs/heterogeneity.md)).
 
 > **What this is and isn't.** A thought experiment about one mechanism:
 > self-interested voting under misperception of measured household
@@ -83,8 +90,10 @@ print(electorate.policy_labels[result.winner], result.tracked)
 democrasim/
   electorate.py   # real households as arrays: impacts, weights, adults per household
   perception.py   # PerceptionModel: perceived = attenuation·true + bias + noise
-  voting.py       # Plurality (indifference abstains) / Approval / InstantRunoff
-  welfare.py      # Utilitarian, Isoelastic(η); explicit financing closes the budget
+  voting.py       # Plurality / Approval / Score / STAR / InstantRunoff (indifference abstains)
+  welfare.py      # Utilitarian, Isoelastic(η) + dollar EDE; financing closes the budget
+  preferences.py  # VoterType mixtures: own-stake and societal motives, one dollar scale
+  axis.py         # a continuous policy dial: ideal outcomes and beliefs about the mapping
   election.py     # sample voters -> perceive -> vote -> grade against welfare
   experiments.py  # accuracy sweeps, threshold finder, bias sweeps
   toy.py          # labeled synthetic comparators (the old model's worlds)
@@ -134,7 +143,7 @@ uv run democrasim build-data        # ~20 min: 3 simulations, one per subprocess
 ## Development
 
 ```bash
-uv run pytest            # 133 behavioral tests; artifact tests run off the committed data
+uv run pytest            # 207 behavioral tests; artifact tests run off the committed data
 uv run ruff check .
 uv run ruff format .
 uv run python scripts/robustness.py      # every stress row behind the findings
@@ -147,11 +156,33 @@ rest on — most fragilely, the sign of the residual cost gap between the
 two policies — so an engine rebuild that moves the findings' world fails
 loudly instead of silently inverting the conclusions.
 
+## Endogenous platforms
+
+`democrasim.strategic` closes the loop: two candidates — households from
+the data, each mixing their own net delta with society's
+equally-distributed-equivalent income change on one dollar scale —
+pick positions in a shared 2D policy space spanned by the measured
+incidence vectors, against an electorate of any `VoterType` mixture,
+and pure Nash equilibria are computed exactly. Perfect information
+disciplines platforms to the status quo through undercutting; noise
+relaxes the discipline and self-serving programs scale with it; a small
+informed-sociotropic voter share restores it. Details and every number:
+[docs/strategic.md](docs/strategic.md) and
+[docs/heterogeneity.md](docs/heterogeneity.md).
+
+## A continuous dial
+
+`democrasim.axis` swaps the two-policy ballot for one continuous
+instrument — every bracket rate up by `t × 10` points, revenue back as an
+equal per-adult transfer ($4,809 at `t = 1`, 68.6% of households
+gaining) — and gives actors preferences over the *outcome* plus a belief
+about how far policy moves it. Demand for policy is then derived: halve
+what a voter believes the policy achieves and they demand twice as much
+of it, and an electorate aggregates those beliefs by median, not by mean.
+Details: [docs/axis.md](docs/axis.md).
+
 ## Roadmap
 
-- [#2](https://github.com/MaxGhenis/democrasim/issues/2) — strategic
-  (Nash) candidate positioning on measured impacts, rebuilt from the old
-  model's equilibrium layer.
 - [#3](https://github.com/MaxGhenis/democrasim/issues/3) — replace the
   parametric perception assumption with a survey-measured misperception
   distribution.

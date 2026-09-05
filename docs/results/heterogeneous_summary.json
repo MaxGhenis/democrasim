@@ -1,0 +1,138 @@
+{
+  "provenance": {
+    "generator": "scripts/heterogeneous_experiments.py",
+    "democrasim_version": "0.2.0",
+    "artifact": "us_2026_measured",
+    "artifact_sha256": "5cd1499d0d5dfecdc3779c443886f86608ff83720d1d88da0d55a55c8631c10c",
+    "grid_points": 21,
+    "n_voters": 10001
+  },
+  "candidate_households": {
+    "candidate_1": {
+      "row": 100807,
+      "income": 109693,
+      "children": 3,
+      "hh_adults": 2,
+      "gross_a": 1133,
+      "gross_b": 0
+    },
+    "candidate_2": {
+      "row": 39882,
+      "income": 578540,
+      "children": 0,
+      "hh_adults": 2,
+      "gross_a": 0,
+      "gross_b": 4655
+    },
+    "rejected_childless_p95_proxy": {
+      "row": 78913,
+      "income": 385413,
+      "children": 0,
+      "hh_adults": 2,
+      "gross_a": 0,
+      "gross_b": 0
+    }
+  },
+  "knife_edge_selfish_weight_threshold": 0.9623,
+  "value_pluralism": {
+    "base_eta": 1.0,
+    "disagreeing_eta": 2.5,
+    "ede_dollars_per_household": {
+      "eta_1": [
+        -169.2877,
+        -379.0578
+      ],
+      "eta_2.5": [
+        -699.6159,
+        -696.735
+      ]
+    },
+    "rows": [
+      {
+        "share_eta_high": 0.0,
+        "p_tracked_grading_eta_1": 1.0,
+        "p_tracked_grading_eta_2.5": 0.0
+      },
+      {
+        "share_eta_high": 0.1,
+        "p_tracked_grading_eta_1": 1.0,
+        "p_tracked_grading_eta_2.5": 0.0
+      },
+      {
+        "share_eta_high": 0.2,
+        "p_tracked_grading_eta_1": 1.0,
+        "p_tracked_grading_eta_2.5": 0.0
+      },
+      {
+        "share_eta_high": 0.3,
+        "p_tracked_grading_eta_1": 1.0,
+        "p_tracked_grading_eta_2.5": 0.0
+      },
+      {
+        "share_eta_high": 0.4,
+        "p_tracked_grading_eta_1": 1.0,
+        "p_tracked_grading_eta_2.5": 0.0
+      },
+      {
+        "share_eta_high": 0.5,
+        "p_tracked_grading_eta_1": 0.5,
+        "p_tracked_grading_eta_2.5": 0.5
+      },
+      {
+        "share_eta_high": 0.6,
+        "p_tracked_grading_eta_1": 0.0,
+        "p_tracked_grading_eta_2.5": 1.0
+      },
+      {
+        "share_eta_high": 0.7,
+        "p_tracked_grading_eta_1": 0.0,
+        "p_tracked_grading_eta_2.5": 1.0
+      },
+      {
+        "share_eta_high": 0.8,
+        "p_tracked_grading_eta_1": 0.0,
+        "p_tracked_grading_eta_2.5": 1.0
+      },
+      {
+        "share_eta_high": 0.9,
+        "p_tracked_grading_eta_1": 0.0,
+        "p_tracked_grading_eta_2.5": 1.0
+      },
+      {
+        "share_eta_high": 1.0,
+        "p_tracked_grading_eta_1": 0.0,
+        "p_tracked_grading_eta_2.5": 1.0
+      }
+    ]
+  },
+  "robustness_variants": [
+    {
+      "variant": "noisy_sociotropic_30pct",
+      "sigma": 10000.0,
+      "grid_points": 21,
+      "n_equilibria": 1,
+      "mean_enacted_alpha": 0.1116
+    },
+    {
+      "variant": "noisy_sociotropic_30pct",
+      "sigma": 30000.0,
+      "grid_points": 21,
+      "n_equilibria": 1,
+      "mean_enacted_alpha": 0.112
+    },
+    {
+      "variant": "selfish_baseline_g13",
+      "sigma": 10000.0,
+      "grid_points": 13,
+      "n_equilibria": 1,
+      "mean_enacted_alpha": 0.6332
+    },
+    {
+      "variant": "homogeneous_half_selfish",
+      "sigma": 10000.0,
+      "grid_points": 13,
+      "n_equilibria": 2,
+      "mean_enacted_alpha": 0.4449
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "axis": {
+    "description": "Position t in [0, 1]: every bracket rate rises by t x 10% points; the revenue returns as an equal per-adult transfer (applied by apply_financing's per_capita mode, whose levy is negative when the policy raises revenue).",
+    "full_rate_increase": 0.1,
+    "baseline_rates": {
+      "1": 0.1,
+      "2": 0.12,
+      "3": 0.22,
+      "4": 0.24,
+      "5": 0.32,
+      "6": 0.35,
+      "7": 0.37
+    },
+    "reform_at_t1": {
+      "gov.irs.income.bracket.rates.1": {
+        "2026-01-01.2100-12-31": 0.2
+      },
+      "gov.irs.income.bracket.rates.2": {
+        "2026-01-01.2100-12-31": 0.22
+      },
+      "gov.irs.income.bracket.rates.3": {
+        "2026-01-01.2100-12-31": 0.32
+      },
+      "gov.irs.income.bracket.rates.4": {
+        "2026-01-01.2100-12-31": 0.34
+      },
+      "gov.irs.income.bracket.rates.5": {
+        "2026-01-01.2100-12-31": 0.42
+      },
+      "gov.irs.income.bracket.rates.6": {
+        "2026-01-01.2100-12-31": 0.45
+      },
+      "gov.irs.income.bracket.rates.7": {
+        "2026-01-01.2100-12-31": 0.47
+      }
+    },
+    "gross_revenue_bn": 1286.6242279608757
+  },
+  "validation": {
+    "midpoint_total_actual_bn": -641.3386322846394,
+    "midpoint_total_predicted_bn": -643.3121139804379,
+    "total_relative_error": 0.0030771289868634804,
+    "share_households_within_1_dollar": 0.9739996128411437,
+    "mean_absolute_error_dollars": 16.273249436209195,
+    "p99_absolute_error_dollars": 152.39187500000025
+  }
+}
