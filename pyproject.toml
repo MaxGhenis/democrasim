@@ -40,6 +40,9 @@ dev = [
     "ipykernel>=6.29",
     "nbclient>=0.10",
     "nbformat>=5.10",
+    # Fast exact normal CDF for the strategic layer's heterogeneous win
+    # tables; the package falls back to math.erf (exact, slower) without it.
+    "scipy>=1.14",
 ]
 
 [build-system]

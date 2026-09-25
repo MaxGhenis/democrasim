@@ -31,6 +31,18 @@ class WelfareMetric(Protocol):
         """Welfare change of each policy vs current law. ``(n_policies,)``"""
         ...
 
+    def dollar_equivalent(self, electorate: Electorate) -> FloatArray:
+        """Each policy's societal value in dollars per household per year.
+
+        The change in equally-distributed-equivalent (EDE) household income:
+        the equal income that would yield the same welfare as the actual
+        distribution. A strictly increasing transform of ``per_policy``, so
+        the two rank policies identically — but dollars are commensurable
+        with household stakes, which is what lets voters and candidates mix
+        selfish and societal motives on one scale. ``(n_policies,)``
+        """
+        ...
+
 
 def _welfare_is_degenerate(values: FloatArray) -> bool:
     """Whether the top two welfare values fail the relative-distinctness rule."""
@@ -65,6 +77,11 @@ class Utilitarian:
 
     def per_policy(self, electorate: Electorate) -> FloatArray:
         return electorate.household_dollars()
+
+    def dollar_equivalent(self, electorate: Electorate) -> FloatArray:
+        """Mean household dollars: the utilitarian EDE change is the mean."""
+        households = float((electorate.weights / electorate.hh_adults).sum())
+        return electorate.household_dollars() / households
 
 
 @dataclass(frozen=True)
@@ -109,6 +126,30 @@ class Isoelastic:
         for j in range(electorate.n_policies):
             reformed = np.maximum(floored + electorate.deltas[:, j], self.income_floor)
             out[j] = float(share @ (self._u(reformed) - base_utility))
+        return out
+
+    def _ede(self, floored_income: FloatArray, shares: FloatArray) -> float:
+        """Equally-distributed-equivalent income: u⁻¹(mean utility)."""
+        if self.eta == 1.0:
+            return float(np.exp(shares @ np.log(floored_income)))
+        mean_power = float(shares @ floored_income ** (1.0 - self.eta))
+        return mean_power ** (1.0 / (1.0 - self.eta))
+
+    def dollar_equivalent(self, electorate: Electorate) -> FloatArray:
+        """ΔEDE per policy, in dollars per household per year.
+
+        Uses the same income floor as :meth:`per_policy`; because the EDE is
+        a strictly increasing transform of mean utility, the dollar values
+        rank policies exactly as the welfare values do.
+        """
+        share = electorate.weights / electorate.hh_adults
+        shares = share / share.sum()
+        floored = np.maximum(electorate.base_income, self.income_floor)
+        base = self._ede(floored, shares)
+        out = np.empty(electorate.n_policies)
+        for j in range(electorate.n_policies):
+            reformed = np.maximum(floored + electorate.deltas[:, j], self.income_floor)
+            out[j] = self._ede(reformed, shares) - base
         return out
 
 

@@ -38,10 +38,19 @@ class PerceptionModel(Protocol):
         ...
 
 
+try:  # exact and C-vectorized; the fallback is exact but Python-looped
+    from scipy.special import ndtr as _ndtr
+except ImportError:  # pragma: no cover - exercised only without scipy
+    _ndtr = None
+
+
 def _phi(z: FloatArray) -> FloatArray:
-    """Standard normal CDF, vectorized, without a scipy dependency."""
+    """Standard normal CDF, vectorized; scipy-free fallback via math.erf."""
+    z = np.asarray(z, dtype=np.float64)
     if z.size == 0:
         return np.empty(z.shape, dtype=np.float64)
+    if _ndtr is not None:
+        return np.asarray(_ndtr(z), dtype=np.float64)
     return 0.5 * (1.0 + np.vectorize(erf)(z / sqrt(2.0)))
 
 

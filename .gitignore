@@ -19,8 +19,9 @@ htmlcov/
 # Jupyter
 .ipynb_checkpoints/
 
-# Scratch build intermediates (per-scenario engine outputs)
-data/intermediate/
-
 # Logs
 *.log
+
+# Engine build intermediates (regenerate with the build scripts)
+data/intermediate/
+data/intermediate_axis/

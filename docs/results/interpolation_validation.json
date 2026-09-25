@@ -1,0 +1,27 @@
+{
+  "year": 2026,
+  "midpoints": {
+    "ctc_mid": {
+      "description": "CTC base $2,700 (midpoint of $2,200 -> $3,200)",
+      "engine_total_bn": 20.5705,
+      "interpolated_total_bn": 19.5522,
+      "total_relative_error": 0.04951,
+      "share_households_within_1_dollar": 0.9626,
+      "share_households_within_10_dollars": 0.9638,
+      "p99_abs_error_dollars": 335.48,
+      "max_abs_error_dollars": 1623.28,
+      "weighted_mean_abs_error_dollars": 9.014
+    },
+    "cap_mid": {
+      "description": "Top rates 37%->35.5% and 35%->34.5% (half the cap depth)",
+      "engine_total_bn": 19.0271,
+      "interpolated_total_bn": 19.0031,
+      "total_relative_error": 0.00126,
+      "share_households_within_1_dollar": 0.9995,
+      "share_households_within_10_dollars": 0.9995,
+      "p99_abs_error_dollars": 0.03,
+      "max_abs_error_dollars": 1533.38,
+      "weighted_mean_abs_error_dollars": 0.226
+    }
+  }
+}

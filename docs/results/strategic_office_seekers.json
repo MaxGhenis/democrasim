@@ -1,0 +1,90 @@
+[
+  {
+    "sigma": 0.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 10.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 50.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 200.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 1000.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 3000.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 10000.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  {
+    "sigma": 30000.0,
+    "n_equilibria": 1,
+    "n_convergent": 1,
+    "convergent_positions": [
+      [
+        0.0,
+        0.0
+      ]
+    ]
+  }
+]

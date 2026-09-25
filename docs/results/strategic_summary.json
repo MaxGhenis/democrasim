@@ -1,0 +1,56 @@
+{
+  "provenance": {
+    "generator": "scripts/strategic_experiments.py",
+    "democrasim_version": "0.2.0",
+    "artifact": "us_2026_measured",
+    "artifact_sha256": "5cd1499d0d5dfecdc3779c443886f86608ff83720d1d88da0d55a55c8631c10c",
+    "grid_points": 21,
+    "n_voters": 10001,
+    "interpolation_validation": "docs/results/interpolation_validation.json"
+  },
+  "candidate_households": {
+    "candidate_1": {
+      "row": 100807,
+      "income": 109693,
+      "children": 3,
+      "hh_adults": 2,
+      "gross_a": 1133,
+      "gross_b": 0
+    },
+    "candidate_2": {
+      "row": 39882,
+      "income": 578540,
+      "children": 0,
+      "hh_adults": 2,
+      "gross_a": 0,
+      "gross_b": 4655
+    },
+    "rejected_childless_p95_proxy": {
+      "row": 78913,
+      "income": 385413,
+      "children": 0,
+      "hh_adults": 2,
+      "gross_a": 0,
+      "gross_b": 0
+    }
+  },
+  "welfare_optimal_position_eta1": [
+    0.0,
+    0.0
+  ],
+  "sigmas": [
+    0.0,
+    10.0,
+    50.0,
+    200.0,
+    1000.0,
+    3000.0,
+    10000.0,
+    30000.0
+  ],
+  "selfish_weights": [
+    0.0,
+    0.5,
+    1.0
+  ]
+}

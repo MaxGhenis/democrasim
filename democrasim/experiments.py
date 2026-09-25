@@ -39,7 +39,8 @@ import pandas as pd
 
 from democrasim.election import ElectionResult, ElectionSpec, run_election
 from democrasim.electorate import Electorate
-from democrasim.perception import LinearGaussianPerception, ranking_accuracy
+from democrasim.perception import LinearGaussianPerception, _phi, ranking_accuracy
+from democrasim.preferences import MixedMotivePerception, VoterType
 from democrasim.voting import NO_WINNER
 from democrasim.welfare import Isoelastic, WelfareMetric
 
@@ -204,6 +205,24 @@ def bias_sweep(
     return df
 
 
+def _plurality_outcome(p_opt: float, p_other: float, n_voters: int | None) -> float:
+    """P(the welfare-preferred policy wins) from expected vote shares.
+
+    Normal approximation to the vote-count difference at finite ``n_voters``;
+    a step function of the expected-share gap in the infinite limit. When
+    everyone abstains the status quo persists and tracking fails.
+    """
+    gap = p_opt - p_other
+    if p_opt + p_other == 0:
+        return 0.0
+    if n_voters is None:
+        return 1.0 if gap > 0 else (0.5 if gap == 0 else 0.0)
+    variance = n_voters * (p_opt + p_other - gap**2)
+    if variance <= 0:
+        return 1.0 if gap > 0 else (0.5 if gap == 0 else 0.0)
+    return float(0.5 * (1.0 + erf(n_voters * gap / sqrt(2.0 * variance))))
+
+
 def analytic_plurality_curve(
     electorate: Electorate,
     noise_sds: Sequence[float],
@@ -247,8 +266,7 @@ def analytic_plurality_curve(
         bias_vector = model._bias_vector(2)
         shifted = attenuation * margins + (bias_vector[0] - bias_vector[1])
         if noise_sd > 0:
-            z = shifted / (noise_sd * sqrt(2.0))
-            p_first = 0.5 * (1.0 + np.vectorize(erf)(z / sqrt(2.0)))
+            p_first = _phi(shifted / (noise_sd * sqrt(2.0)))
             p_abstain_each = np.zeros_like(p_first)
         else:
             p_first = np.where(shifted > 0, 1.0, np.where(shifted < 0, 0.0, 0.0))
@@ -259,21 +277,7 @@ def analytic_plurality_curve(
         share_second = 1.0 - share_first - share_abstain
         p_opt = share_first if optimal == 0 else share_second
         p_other = share_second if optimal == 0 else share_first
-
-        gap = p_opt - p_other
-        if n_voters is None:
-            if p_opt + p_other == 0:
-                p_tracked = 0.0  # everyone abstains; status quo persists
-            else:
-                p_tracked = 1.0 if gap > 0 else (0.5 if gap == 0 else 0.0)
-        else:
-            variance = n_voters * (p_opt + p_other - gap**2)
-            if p_opt + p_other == 0:
-                p_tracked = 0.0
-            elif variance <= 0:
-                p_tracked = 1.0 if gap > 0 else (0.5 if gap == 0 else 0.0)
-            else:
-                p_tracked = 0.5 * (1.0 + erf(n_voters * gap / sqrt(2.0 * variance)))
+        p_tracked = _plurality_outcome(p_opt, p_other, n_voters)
         rows.append(
             {
                 "noise_sd": float(noise_sd),
@@ -291,6 +295,68 @@ def analytic_plurality_curve(
     df.attrs["source"] = electorate.source
     df.attrs["n_voters"] = n_voters
     df.attrs["analytic"] = True
+    return df
+
+
+def analytic_mixed_plurality_curve(
+    electorate: Electorate,
+    noise_sds: Sequence[float],
+    *,
+    types: tuple[VoterType, ...],
+    bias: float | tuple[float, ...] = 0.0,
+    attenuation: float = 1.0,
+    n_voters: int | None = 10_001,
+    welfare: WelfareMetric | None = None,
+    income_floor: float = 1_000.0,
+) -> pd.DataFrame:
+    """Closed-form welfare tracking for a mixed-motive electorate.
+
+    The heterogeneous-preferences analog of
+    :func:`analytic_plurality_curve`: voters are a mixture of
+    :class:`~democrasim.preferences.VoterType` s over a shared
+    ``LinearGaussianPerception(noise_sd, bias, attenuation)`` own-stake
+    model, ``noise_sd`` swept over ``noise_sds``. Each voter's utility
+    margin is normal, so expected vote shares — and the tracking
+    probability — stay in closed form; the type mixture is exact, not
+    sampled. With ``types=(VoterType(share=1),)`` this reproduces
+    :func:`analytic_plurality_curve` identically.
+    """
+    if electorate.n_policies != 2:
+        raise ValueError("the analytic curve is defined for two policies")
+    metric = welfare if welfare is not None else Isoelastic()
+    optimal = int(np.argmax(metric.per_policy(electorate)))
+
+    weights = electorate.weights / electorate.weights.sum()
+    rows = []
+    for noise_sd in noise_sds:
+        model = MixedMotivePerception(
+            own=LinearGaussianPerception(
+                noise_sd=float(noise_sd), bias=bias, attenuation=attenuation
+            ),
+            types=types,
+            income_floor=income_floor,
+        )
+        p_first, p_indifferent = model.vote_probabilities(electorate)
+        share_first = float(weights @ p_first)
+        share_abstain = float(weights @ p_indifferent)
+        share_second = 1.0 - share_first - share_abstain
+        p_opt = share_first if optimal == 0 else share_second
+        p_other = share_second if optimal == 0 else share_first
+        rows.append(
+            {
+                "noise_sd": float(noise_sd),
+                "p_tracked": float(_plurality_outcome(p_opt, p_other, n_voters)),
+                "expected_share_optimal": p_opt,
+                "expected_share_other": p_other,
+                "expected_share_abstain": share_abstain,
+            }
+        )
+    df = pd.DataFrame(rows)
+    df.attrs["policy_labels"] = electorate.policy_labels
+    df.attrs["source"] = electorate.source
+    df.attrs["n_voters"] = n_voters
+    df.attrs["analytic"] = True
+    df.attrs["types"] = types
     return df
 
 
