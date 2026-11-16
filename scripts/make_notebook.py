@@ -58,7 +58,7 @@ CELLS = [
         "## The measured inputs\n"
         "\n"
         "Each row is a voting-age adult from PolicyEngine's certified "
-        "Populace-backed US microdata. The impact columns are the engine's "
+        "Microcosm-backed US microdata. The impact columns are the engine's "
         "answer to *\"how would this household's annual net income change "
         'under each policy?"* — including knock-on effects through other '
         "taxes and benefits, which is why they are worth measuring instead "

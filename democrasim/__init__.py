@@ -1,7 +1,7 @@
 """Democrasim: do elections track welfare when voters misperceive impacts?
 
 An election simulation with measured inputs: households from certified,
-population-calibrated US microdata (Populace), actual encoded reforms with
+population-calibrated US microdata (Microcosm), actual encoded reforms with
 opposite incidence, and engine-computed per-household impacts.
 Perception — how accurately voters see their own stakes — is the headline
 assumption, held behind an interface a measured distribution can drop into;

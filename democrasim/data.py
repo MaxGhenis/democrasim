@@ -2,7 +2,7 @@
 
 The artifact under ``democrasim/data/`` is *model output with provenance*,
 not observed data: per-household policy impacts computed by the PolicyEngine
-US microsimulation model on its certified Populace-backed microdata, one row
+US microsimulation model on its certified Microcosm-backed microdata, one row
 per voting-age adult. The sidecar ``.meta.json`` records exactly how it was
 built (package versions, dataset, reform parameter dictionaries, totals) and
 :func:`artifact_metadata` exposes it. Rebuild with ``democrasim build-data``
