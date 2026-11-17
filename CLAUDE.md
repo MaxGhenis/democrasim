@@ -9,7 +9,7 @@ policy when voters misperceive how policies would affect them?** The inputs
 are measured; the behavioral layers are labeled assumptions:
 
 - Electorate = US households from PolicyEngine's certified,
-  population-calibrated Populace microdata, one voting-age adult per row.
+  population-calibrated Microcosm microdata, one voting-age adult per row.
 - Platforms = actual encoded tax reforms with opposite incidence, labeled
   generically (Policy A / Policy B — never real candidates or parties).
 - True impacts = engine-computed per-household net income deltas.

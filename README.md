@@ -7,7 +7,7 @@ Democrasim simulates that question with the inputs measured and the
 behavioral layers labeled:
 
 - **The electorate is measured.** Every voter is a voting-age adult from
-  PolicyEngine's certified, population-calibrated Populace microdata —
+  PolicyEngine's certified, population-calibrated Microcosm microdata —
   120,408 records representing 268M adults.
 - **The platforms are actual encoded reforms.** Two federal tax changes
   with opposite incidence, budget-matched within 3% and labeled
@@ -131,7 +131,7 @@ output with provenance, not observed data: one row per voting-age adult,
 with the household's engine-computed impact under each policy, survey
 weight, baseline net income, household composition, and state. The
 sidecar `.meta.json` records the engine versions, the certified dataset
-(Populace `populace_us_2024`, pinned revision and SHA-256), both reform
+(Microcosm `populace_us_2024`, pinned revision and SHA-256), both reform
 parameter dictionaries with explicit start and end dates, totals, and the
 validation results from the build. Rebuild it with:
 
